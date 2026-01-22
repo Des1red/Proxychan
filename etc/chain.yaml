@@ -1,0 +1,9 @@
+# Proxy chain configuration
+## SUPPORTS ONLY SOCKS5
+
+chain:
+  # First hop: local SSH SOCKS proxy
+  - type: ## socks5
+    addr: #proxy ip address
+
+  # you can add more hops here
