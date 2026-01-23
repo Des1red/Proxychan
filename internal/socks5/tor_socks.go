@@ -1,4 +1,4 @@
-package dialer
+package socks5
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type torSocks5Dialer struct {
 	timeout time.Duration
 }
 
-func NewTorSOCKS5(torSocksAddr string, connectTimeout time.Duration) Dialer {
+func NewTorSOCKS5(torSocksAddr string, connectTimeout time.Duration) *torSocks5Dialer {
 	return &torSocks5Dialer{torAddr: torSocksAddr, timeout: connectTimeout}
 }
 

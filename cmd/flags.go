@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"proxychan/internal/dialer"
 	"time"
 )
@@ -29,4 +31,17 @@ func badFlagUse() (bool, string) {
 	}
 
 	return true, ""
+}
+
+// setupFlagsAndParse sets up the command-line flags and parses them.
+func setupFlagsAndParse() {
+	flag.Usage = printHelp
+	flag.Parse()
+
+	ok, msg := badFlagUse()
+	if !ok {
+		fmt.Println(msg)
+		printHelp()
+		os.Exit(1)
+	}
 }
