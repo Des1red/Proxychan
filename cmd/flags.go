@@ -46,6 +46,8 @@ func dispatchSystemCommands() bool {
 		runListUsers()
 	case "del-user":
 		runDeleteUser(args[1:])
+	case "install-service":
+		runInstallService()
 	default:
 		fmt.Printf("unknown command: %s\n\n", args[0])
 		printHelp()

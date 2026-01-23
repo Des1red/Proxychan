@@ -1,0 +1,54 @@
+package systemserviceinstall
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+const launchdPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.proxychan.proxy</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>%s</string>
+    <string>-listen</string>
+    <string>%s</string>
+    <string>-mode</string>
+    <string>%s</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+</dict>
+</plist>
+`
+
+func installLaunchd(cfg InstallConfig) error {
+	const plistPath = "/Library/LaunchDaemons/com.proxychan.proxy.plist"
+
+	content := fmt.Sprintf(
+		launchdPlist,
+		cfg.BinaryPath,
+		cfg.ListenAddr,
+		cfg.Mode,
+	)
+
+	if err := os.WriteFile(plistPath, []byte(content), 0644); err != nil {
+		return err
+	}
+
+	cmds := [][]string{
+		{"launchctl", "bootout", "system/com.proxychan.proxy"},
+		{"launchctl", "bootstrap", "system", plistPath},
+	}
+
+	for _, c := range cmds {
+		_ = exec.Command(c[0], c[1:]...).Run()
+	}
+
+	return nil
+}

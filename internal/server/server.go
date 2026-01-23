@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -53,7 +54,13 @@ func (s *Server) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	s.cfg.Logger.Printf("listening on %s", s.cfg.ListenAddr)
+	if s.cfg.RequireAuth {
+		if ip, err := detectPublicIP(); err == nil {
+			s.cfg.Logger.Printf("public address: %s", net.JoinHostPort(ip, strings.Split(s.cfg.ListenAddr, ":")[1]))
+		}
+	}
 
 	// Stop listener on context cancel.
 	go func() {
