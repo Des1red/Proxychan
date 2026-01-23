@@ -23,26 +23,6 @@ TimeoutStopSec=10
 [Install]
 WantedBy=multi-user.target
 `
-const launchdPlist = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
- "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.proxychan.proxy</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>%s</string>
-    <string>-listen</string>
-    <string>%s</string>
-    <string>-mode</string>
-    <string>%s</string>
-  </array>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-</dict>
-</plist>
-`
 
 func installSystemd(cfg InstallConfig) error {
 	unitPath := "/etc/systemd/system/proxychan.service"
