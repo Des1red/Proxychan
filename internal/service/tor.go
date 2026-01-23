@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"proxychan/internal/logging"
 	"proxychan/internal/models"
 	"strings"
 	"time"
@@ -15,8 +16,7 @@ var cfg = &models.DefaultRuntimeConfig
 func TorServiceStart(torSocksAddr string) {
 	ctrl, err := getTorController()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logging.GetLogger().Fatalf("Failed to get Tor controller: %v", err)
 	}
 
 	// Best-effort service check (informational)
@@ -24,6 +24,7 @@ func TorServiceStart(torSocksAddr string) {
 
 	// Authoritative check
 	if torReachable(torSocksAddr) {
+		logging.GetLogger().Info("Tor SOCKS is already reachable.")
 		return
 	}
 
@@ -35,15 +36,15 @@ func TorServiceStart(torSocksAddr string) {
 	ans = strings.TrimSpace(strings.ToLower(ans))
 
 	if ans != "y" && ans != "yes" {
-		fmt.Println("Tor required. Exiting.")
+		fmt.Println("Tor is required. Exiting.")
 		os.Exit(1)
 	}
 
 	if err := ctrl.StartTor(); err != nil {
-		fmt.Printf("Failed to start Tor: %v\n", err)
-		os.Exit(1)
+		logging.GetLogger().Fatalf("Failed to start Tor: %v", err)
 	} else {
 		cfg.DisableTorOnExit = true
+		logging.GetLogger().Info("Tor service started successfully.")
 	}
 
 	// One final check
@@ -57,8 +58,7 @@ func TorServiceStart(torSocksAddr string) {
 	}
 
 	if !ready {
-		fmt.Println("Tor started but SOCKS is still unreachable.")
-		os.Exit(1)
+		logging.GetLogger().Fatalf("Tor started but SOCKS is still unreachable.")
 	}
 
 }
@@ -76,10 +76,12 @@ func TorServiceStop() {
 	if models.DefaultRuntimeConfig.DisableTorOnExit {
 		if ctrl, err := getTorController(); err == nil {
 			if err := ctrl.StopTor(); err != nil {
-				fmt.Printf("\nFailed to stop Tor service: %v\n", err)
+				logging.GetLogger().Errorf("Failed to stop Tor service: %v", err)
 			} else {
-				fmt.Println("\nTor service stopped")
+				logging.GetLogger().Info("Tor service stopped.")
 			}
+		} else {
+			logging.GetLogger().Errorf("Failed to get Tor controller: %v", err)
 		}
 	}
 }

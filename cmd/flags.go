@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"proxychan/internal/dialer"
+	"proxychan/internal/logging"
 	"time"
 )
 
@@ -62,8 +63,13 @@ func setupFlagsAndParse() {
 	flag.Usage = printHelp
 	flag.Parse()
 
+	// Check flag usage validity
 	ok, msg := badFlagUse()
 	if !ok {
+		// Log the error with logrus for flag validation issues
+		logging.GetLogger().Errorf("Flag validation error: %s", msg)
+
+		// Display the message and exit
 		fmt.Println(msg)
 		printHelp()
 		os.Exit(1)

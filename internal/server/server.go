@@ -3,23 +3,24 @@ package server
 import (
 	"context"
 	"errors"
-	"io"
-	"log"
 	"net"
 	"strings"
 	"sync"
 	"time"
 
 	"proxychan/internal/dialer"
+	"proxychan/internal/logging"
 	"proxychan/internal/socks5"
 	"proxychan/internal/system"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Config struct {
 	ListenAddr  string
 	Dialer      dialer.Dialer
 	IdleTimeout time.Duration
-	Logger      *log.Logger
+	Logger      *logrus.Logger
 
 	RequireAuth bool
 }
@@ -30,7 +31,7 @@ type Server struct {
 
 func New(cfg Config) *Server {
 	if cfg.Logger == nil {
-		cfg.Logger = log.New(io.Discard, "", 0)
+		cfg.Logger = logging.GetLogger()
 	}
 	return &Server{cfg: cfg}
 }
@@ -55,10 +56,11 @@ func (s *Server) Run(ctx context.Context) error {
 		return err
 	}
 
-	s.cfg.Logger.Printf("listening on %s", s.cfg.ListenAddr)
+	s.cfg.Logger.Infof("listening on %s", s.cfg.ListenAddr)
+	// Log public address if required
 	if s.cfg.RequireAuth {
 		if ip, err := detectPublicIP(); err == nil {
-			s.cfg.Logger.Printf("public address: %s", net.JoinHostPort(ip, strings.Split(s.cfg.ListenAddr, ":")[1]))
+			s.cfg.Logger.Infof("public address: %s", net.JoinHostPort(ip, strings.Split(s.cfg.ListenAddr, ":")[1]))
 		}
 	}
 
@@ -74,7 +76,7 @@ func (s *Server) Run(ctx context.Context) error {
 			if errors.Is(err, net.ErrClosed) {
 				return nil
 			}
-			s.cfg.Logger.Printf("accept error: %v", err)
+			s.cfg.Logger.Errorf("accept error: %v", err)
 			continue
 		}
 		go s.handleConn(ctx, c)
@@ -90,7 +92,7 @@ func (s *Server) handleConn(ctx context.Context, client net.Conn) {
 		AuthFunc:    system.Authenticate,
 	})
 	if err != nil {
-		s.cfg.Logger.Printf("handshake error from %s: %v", client.RemoteAddr(), err)
+		s.cfg.Logger.Warnf("handshake error from %s: %v", client.RemoteAddr(), err)
 		return
 	}
 
@@ -98,7 +100,7 @@ func (s *Server) handleConn(ctx context.Context, client net.Conn) {
 	if err != nil {
 		// Unsupported command or parse failure.
 		_ = socks5.WriteReply(client, 0x07) // Command not supported
-		s.cfg.Logger.Printf("request error from %s: %v", client.RemoteAddr(), err)
+		s.cfg.Logger.Warnf("request error from %s: %v", client.RemoteAddr(), err)
 		return
 	}
 
@@ -109,7 +111,7 @@ func (s *Server) handleConn(ctx context.Context, client net.Conn) {
 	out, err := s.cfg.Dialer.DialContext(dialCtx, "tcp", req.Address)
 	if err != nil {
 		_ = socks5.WriteReply(client, 0x05) // Connection refused (generic-ish)
-		s.cfg.Logger.Printf("dial fail %s -> %s: %v", client.RemoteAddr(), req.Address, err)
+		s.cfg.Logger.Warnf("dial fail %s -> %s: %v", client.RemoteAddr(), req.Address, err)
 		return
 	}
 	defer out.Close()

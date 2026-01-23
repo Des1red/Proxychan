@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"proxychan/internal/logging"
 	"time"
 )
 
@@ -21,41 +22,50 @@ func NewTorSOCKS5(torSocksAddr string, connectTimeout time.Duration) *torSocks5D
 
 func (t *torSocks5Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	if network != "tcp" && network != "tcp4" && network != "tcp6" {
+		logging.GetLogger().Errorf("tor dialer supports tcp only, got %q", network)
 		return nil, fmt.Errorf("tor dialer supports tcp only, got %q", network)
 	}
 
 	nd := net.Dialer{Timeout: t.timeout}
 	c, err := nd.DialContext(ctx, "tcp", t.torAddr)
 	if err != nil {
+		logging.GetLogger().Errorf("Failed to dial Tor SOCKS5 %s: %v", t.torAddr, err)
 		return nil, fmt.Errorf("dial tor socks5 %s: %w", t.torAddr, err)
 	}
 
 	// If anything fails, close.
 	if err := t.socks5Handshake(c); err != nil {
 		_ = c.Close()
+		logging.GetLogger().Errorf("Failed SOCKS5 handshake: %v", err)
 		return nil, err
 	}
 	if err := t.socks5Connect(c, address); err != nil {
 		_ = c.Close()
+		logging.GetLogger().Errorf("Failed SOCKS5 connection: %v", err)
 		return nil, err
 	}
+	logging.GetLogger().Infof("Successfully connected to %s via Tor", address)
 	return c, nil
 }
 
 func (t *torSocks5Dialer) socks5Handshake(c net.Conn) error {
 	// Client greeting: VER=5, NMETHODS=1, METHODS={0x00 no-auth}
 	if _, err := c.Write([]byte{0x05, 0x01, 0x00}); err != nil {
+		logging.GetLogger().Errorf("Failed to write SOCKS5 greeting: %v", err)
 		return fmt.Errorf("tor socks5 greeting write: %w", err)
 	}
 	// Server choice: VER, METHOD
 	var resp [2]byte
 	if _, err := io.ReadFull(c, resp[:]); err != nil {
+		logging.GetLogger().Errorf("Failed to read SOCKS5 greeting response: %v", err)
 		return fmt.Errorf("tor socks5 greeting read: %w", err)
 	}
 	if resp[0] != 0x05 {
+		logging.GetLogger().Errorf("Unexpected SOCKS5 version: %d", resp[0])
 		return fmt.Errorf("tor socks5 bad version: %d", resp[0])
 	}
 	if resp[1] != 0x00 {
+		logging.GetLogger().Errorf("SOCKS5 authentication method not accepted: 0x%02x", resp[1])
 		return fmt.Errorf("tor socks5 auth method not accepted: 0x%02x", resp[1])
 	}
 	return nil
@@ -64,10 +74,12 @@ func (t *torSocks5Dialer) socks5Handshake(c net.Conn) error {
 func (t *torSocks5Dialer) socks5Connect(c net.Conn, address string) error {
 	host, portStr, err := net.SplitHostPort(address)
 	if err != nil {
+		logging.GetLogger().Errorf("Failed to split host:port %q: %v", address, err)
 		return fmt.Errorf("split host:port %q: %w", address, err)
 	}
 	port, err := parsePort(portStr)
 	if err != nil {
+		logging.GetLogger().Errorf("Failed to parse port %s: %v", portStr, err)
 		return err
 	}
 
@@ -81,6 +93,7 @@ func (t *torSocks5Dialer) socks5Connect(c net.Conn, address string) error {
 	case ip == nil:
 		// domain name
 		if len(host) > 255 {
+			logging.GetLogger().Errorf("Domain too long for SOCKS5: %s", host)
 			return errors.New("domain too long for socks5")
 		}
 		req = append(req, 0x03, byte(len(host)))
@@ -99,6 +112,7 @@ func (t *torSocks5Dialer) socks5Connect(c net.Conn, address string) error {
 
 	_ = c.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	if _, err := c.Write(req); err != nil {
+		logging.GetLogger().Errorf("Failed to write SOCKS5 connect request: %v", err)
 		return fmt.Errorf("tor socks5 connect write: %w", err)
 	}
 	_ = c.SetWriteDeadline(time.Time{})
@@ -106,17 +120,21 @@ func (t *torSocks5Dialer) socks5Connect(c net.Conn, address string) error {
 	// Read reply: VER REP RSV ATYP BND.ADDR BND.PORT
 	var hdr [4]byte
 	if _, err := io.ReadFull(c, hdr[:]); err != nil {
+		logging.GetLogger().Errorf("Failed to read SOCKS5 connect response header: %v", err)
 		return fmt.Errorf("tor socks5 connect read hdr: %w", err)
 	}
 	if hdr[0] != 0x05 {
+		logging.GetLogger().Errorf("Unexpected SOCKS5 version in response: %d", hdr[0])
 		return fmt.Errorf("tor socks5 reply bad version: %d", hdr[0])
 	}
 	if hdr[1] != 0x00 {
+		logging.GetLogger().Errorf("SOCKS5 connect failed, REP=0x%02x", hdr[1])
 		return fmt.Errorf("tor socks5 connect failed, REP=0x%02x", hdr[1])
 	}
 
 	// Drain BND.ADDR based on ATYP (not used)
 	if err := drainSocksBind(c, hdr[3]); err != nil {
+		logging.GetLogger().Errorf("Failed to drain SOCKS5 bind address: %v", err)
 		return fmt.Errorf("tor socks5 drain bind: %w", err)
 	}
 	return nil
@@ -126,21 +144,26 @@ func drainSocksBind(r io.Reader, atyp byte) error {
 	switch atyp {
 	case 0x01: // IPv4
 		if _, err := io.CopyN(io.Discard, r, 4+2); err != nil {
+			logging.GetLogger().Errorf("Failed to drain IPv4 bind address: %v", err)
 			return err
 		}
 	case 0x04: // IPv6
 		if _, err := io.CopyN(io.Discard, r, 16+2); err != nil {
+			logging.GetLogger().Errorf("Failed to drain IPv6 bind address: %v", err)
 			return err
 		}
 	case 0x03: // domain
 		var l [1]byte
 		if _, err := io.ReadFull(r, l[:]); err != nil {
+			logging.GetLogger().Errorf("Failed to read domain length: %v", err)
 			return err
 		}
 		if _, err := io.CopyN(io.Discard, r, int64(l[0])+2); err != nil {
+			logging.GetLogger().Errorf("Failed to drain domain bind address: %v", err)
 			return err
 		}
 	default:
+		logging.GetLogger().Errorf("Unknown ATYP: 0x%02x", atyp)
 		return fmt.Errorf("unknown ATYP: 0x%02x", atyp)
 	}
 	return nil
@@ -150,6 +173,7 @@ func parsePort(s string) (uint16, error) {
 	p, err := net.LookupPort("tcp", s)
 	if err == nil {
 		if p < 0 || p > 65535 {
+			logging.GetLogger().Errorf("Invalid port: %s", s)
 			return 0, fmt.Errorf("invalid port: %s", s)
 		}
 		return uint16(p), nil
@@ -158,6 +182,7 @@ func parsePort(s string) (uint16, error) {
 	var n int
 	_, scanErr := fmt.Sscanf(s, "%d", &n)
 	if scanErr != nil || n < 1 || n > 65535 {
+		logging.GetLogger().Errorf("Invalid port: %s", s)
 		return 0, fmt.Errorf("invalid port: %s", s)
 	}
 	return uint16(n), nil

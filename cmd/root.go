@@ -1,34 +1,37 @@
 package cmd
 
+import "proxychan/internal/logging"
+
+// Execute runs the main execution flow
 func Execute() {
 	// Setup flags and parse them
 	setupFlagsAndParse()
 
-	// handle management commands first
+	// Setup structured logging
+	logging.SetupLogger()
+
+	// Handle management commands first (like add-user, del-user)
 	if handled := dispatchSystemCommands(); handled {
 		return
 	}
 
-	// Create logger
-	logger := newLogger()
-
-	// Load chain configuration if enabled
-	hops := loadChainIfEnabled(logger)
+	// Load chain configuration if dynamic chain is enabled
+	hops := loadChainIfEnabled()
 
 	// Build base dialer (direct/tor)
-	base := buildBaseDialer(logger)
+	base := buildBaseDialer()
 
-	// Build the plan (with or without chaining)
-	plan := buildPlan(logger, base, hops)
+	// Build the dial plan
+	plan := buildPlan(base, hops)
 
 	// Run the server
-	err := runServer(logger, plan)
+	err := runServer(plan)
 
-	// Cleanup (e.g., stop Tor)
+	// Cleanup (stop Tor service if needed)
 	cleanup()
 
 	// Check for errors and log fatal if any
 	if err != nil {
-		logger.Fatalf("server error: %v", err)
+		logging.GetLogger().Fatalf("server error: %v", err)
 	}
 }
