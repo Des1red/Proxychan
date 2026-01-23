@@ -33,6 +33,28 @@ func badFlagUse() (bool, string) {
 	return true, ""
 }
 
+func dispatchSystemCommands() bool {
+	args := flag.Args()
+	if len(args) == 0 {
+		return false
+	}
+
+	switch args[0] {
+	case "add-user":
+		runAddUser()
+	case "list-users":
+		runListUsers()
+	case "del-user":
+		runDeleteUser(args[1:])
+	default:
+		fmt.Printf("unknown command: %s\n\n", args[0])
+		printHelp()
+		os.Exit(1)
+	}
+
+	return true
+}
+
 // setupFlagsAndParse sets up the command-line flags and parses them.
 func setupFlagsAndParse() {
 	flag.Usage = printHelp

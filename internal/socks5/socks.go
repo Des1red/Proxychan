@@ -13,62 +13,119 @@ var (
 	ErrUnsupportedVersion = errors.New("unsupported SOCKS version")
 	ErrNoAcceptableMethod = errors.New("no acceptable auth method")
 	ErrUnsupportedCommand = errors.New("unsupported command")
+
+	ErrAuthFailed = errors.New("authentication failed")
 )
+
+type HandshakeOptions struct {
+	RequireAuth bool
+	AuthFunc    func(username, password string) error
+}
 
 type Request struct {
 	Cmd     byte   // 0x01 CONNECT
 	Address string // host:port (domain or IP)
 }
 
-// HandleHandshake supports: SOCKS5 + NO AUTH only.
-func HandleHandshake(rw io.ReadWriter) error {
-	// Client greeting: VER, NMETHODS, METHODS...
+const (
+	methodNoAuth   = 0x00
+	methodUserPass = 0x02
+	methodNoAccept = 0xFF
+)
+
+const (
+	authStatusSuccess = 0x00
+	authStatusFailure = 0x01
+)
+
+const (
+	socksVersion5 = 0x05
+
+	cmdConnect = 0x01
+
+	atypIPv4   = 0x01
+	atypDomain = 0x03
+	atypIPv6   = 0x04
+)
+
+// HandleHandshake negotiates SOCKS5 auth.
+func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) error {
 	var hdr [2]byte
 	if _, err := io.ReadFull(rw, hdr[:]); err != nil {
 		return err
 	}
-	if hdr[0] != 0x05 {
+	if hdr[0] != socksVersion5 {
 		return ErrUnsupportedVersion
 	}
+
 	nMethods := int(hdr[1])
+	if nMethods <= 0 {
+		_, _ = rw.Write([]byte{socksVersion5, methodNoAccept})
+		return ErrNoAcceptableMethod
+	}
+
 	methods := make([]byte, nMethods)
 	if _, err := io.ReadFull(rw, methods); err != nil {
 		return err
 	}
 
-	// We accept only 0x00 (no auth)
-	chosen := byte(0xFF)
+	required := byte(methodNoAuth)
+	if opt.RequireAuth {
+		required = methodUserPass
+		if opt.AuthFunc == nil {
+			_, _ = rw.Write([]byte{socksVersion5, methodNoAccept})
+			return fmt.Errorf("socks5: RequireAuth set but AuthFunc is nil")
+		}
+	}
+
+	chosen := byte(methodNoAccept)
 	for _, m := range methods {
-		if m == 0x00 {
-			chosen = 0x00
+		if m == required {
+			chosen = required
 			break
 		}
 	}
 
-	// Server method selection: VER, METHOD
-	if _, err := rw.Write([]byte{0x05, chosen}); err != nil {
+	if _, err := rw.Write([]byte{socksVersion5, chosen}); err != nil {
 		return err
 	}
-	if chosen == 0xFF {
+	if chosen == methodNoAccept {
 		return ErrNoAcceptableMethod
 	}
+
+	if chosen == methodUserPass {
+		u, p, err := readUserPassAuth(rw)
+		if err != nil {
+			_ = writeUserPassStatus(rw, authStatusFailure)
+			return err
+		}
+
+		if err := opt.AuthFunc(u, p); err != nil {
+			_ = writeUserPassStatus(rw, authStatusFailure)
+			return ErrAuthFailed
+		}
+
+		if err := writeUserPassStatus(rw, authStatusSuccess); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-// ReadRequest parses a SOCKS5 CONNECT request (CMD=0x01).
 func ReadRequest(r io.Reader) (Request, error) {
-	// VER CMD RSV ATYP
 	var hdr [4]byte
 	if _, err := io.ReadFull(r, hdr[:]); err != nil {
 		return Request{}, err
 	}
-	if hdr[0] != 0x05 {
+	if hdr[0] != socksVersion5 {
 		return Request{}, ErrUnsupportedVersion
 	}
+
 	cmd := hdr[1]
 	atyp := hdr[3]
 
-	if cmd != 0x01 {
+	if cmd != cmdConnect {
 		return Request{Cmd: cmd}, ErrUnsupportedCommand
 	}
 
@@ -81,6 +138,7 @@ func ReadRequest(r io.Reader) (Request, error) {
 	if _, err := io.ReadFull(r, portBuf[:]); err != nil {
 		return Request{}, err
 	}
+
 	port := binary.BigEndian.Uint16(portBuf[:])
 
 	return Request{
@@ -91,19 +149,19 @@ func ReadRequest(r io.Reader) (Request, error) {
 
 func readAddr(r io.Reader, atyp byte) (string, error) {
 	switch atyp {
-	case 0x01: // IPv4
+	case atypIPv4:
 		var b [4]byte
 		if _, err := io.ReadFull(r, b[:]); err != nil {
 			return "", err
 		}
 		return net.IP(b[:]).String(), nil
-	case 0x04: // IPv6
+	case atypIPv6:
 		var b [16]byte
 		if _, err := io.ReadFull(r, b[:]); err != nil {
 			return "", err
 		}
 		return net.IP(b[:]).String(), nil
-	case 0x03: // DOMAIN
+	case atypDomain:
 		var l [1]byte
 		if _, err := io.ReadFull(r, l[:]); err != nil {
 			return "", err
@@ -121,25 +179,17 @@ func readAddr(r io.Reader, atyp byte) (string, error) {
 	}
 }
 
-// WriteReply writes a SOCKS5 reply.
-// REP: 0x00 success, else error code.
-// BND.ADDR/BND.PORT can be zeros; clients generally accept that.
 func WriteReply(w io.Writer, rep byte) error {
-	// VER REP RSV ATYP BND.ADDR BND.PORT
-	// We'll send ATYP=IPv4 and 0.0.0.0:0
 	_, err := w.Write([]byte{
-		0x05, rep, 0x00, 0x01,
+		socksVersion5, rep, 0x00, atypIPv4,
 		0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00,
 	})
 	return err
 }
 
-// socks5ConnectOverConn performs a SOCKS5 handshake + CONNECT
-// over an already-established TCP connection.
 func ConnectOverConn(c net.Conn, address string) error {
-	// --- greeting ---
-	if _, err := c.Write([]byte{0x05, 0x01, 0x00}); err != nil {
+	if _, err := c.Write([]byte{socksVersion5, 0x01, methodNoAuth}); err != nil {
 		return fmt.Errorf("socks5 greeting write: %w", err)
 	}
 
@@ -147,11 +197,10 @@ func ConnectOverConn(c net.Conn, address string) error {
 	if _, err := io.ReadFull(c, resp[:]); err != nil {
 		return fmt.Errorf("socks5 greeting read: %w", err)
 	}
-	if resp[0] != 0x05 || resp[1] != 0x00 {
+	if resp[0] != socksVersion5 || resp[1] != methodNoAuth {
 		return fmt.Errorf("socks5 auth not accepted")
 	}
 
-	// --- build CONNECT ---
 	host, portStr, err := net.SplitHostPort(address)
 	if err != nil {
 		return err
@@ -162,21 +211,18 @@ func ConnectOverConn(c net.Conn, address string) error {
 		return err
 	}
 
-	req := []byte{0x05, 0x01, 0x00} // VER, CONNECT, RSV
+	req := []byte{socksVersion5, cmdConnect, 0x00}
 
 	ip := net.ParseIP(host)
 	switch {
 	case ip == nil:
-		if len(host) > 255 {
-			return fmt.Errorf("domain too long")
-		}
-		req = append(req, 0x03, byte(len(host)))
+		req = append(req, atypDomain, byte(len(host)))
 		req = append(req, []byte(host)...)
 	case ip.To4() != nil:
-		req = append(req, 0x01)
+		req = append(req, atypIPv4)
 		req = append(req, ip.To4()...)
 	default:
-		req = append(req, 0x04)
+		req = append(req, atypIPv6)
 		req = append(req, ip.To16()...)
 	}
 
@@ -190,12 +236,11 @@ func ConnectOverConn(c net.Conn, address string) error {
 	}
 	_ = c.SetWriteDeadline(time.Time{})
 
-	// --- reply ---
 	var hdr [4]byte
 	if _, err := io.ReadFull(c, hdr[:]); err != nil {
 		return fmt.Errorf("socks5 reply read: %w", err)
 	}
-	if hdr[1] != 0x00 {
+	if hdr[1] != authStatusSuccess {
 		return fmt.Errorf("socks5 connect failed, REP=0x%02x", hdr[1])
 	}
 

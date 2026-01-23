@@ -38,6 +38,13 @@ func printHelp() {
 	)
 	fmt.Println()
 
+	fmt.Println("User management:")
+	clihelp.Print(
+		clihelp.F("add-user", "", "Initiates user creation"),
+		clihelp.F("list-users", "", "Prints list of existing users"),
+		clihelp.F("del-user", "string", "Deletes existing user"),
+	)
+	fmt.Println()
 	// ─── Notes ───────────────────────────────────────────────
 	fmt.Println("Notes:")
 	fmt.Println("  • SOCKS5 hops only")

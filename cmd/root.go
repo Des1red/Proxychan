@@ -4,6 +4,11 @@ func Execute() {
 	// Setup flags and parse them
 	setupFlagsAndParse()
 
+	// handle management commands first
+	if handled := dispatchSystemCommands(); handled {
+		return
+	}
+
 	// Create logger
 	logger := newLogger()
 

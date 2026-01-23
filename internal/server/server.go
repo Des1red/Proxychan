@@ -11,6 +11,7 @@ import (
 
 	"proxychan/internal/dialer"
 	"proxychan/internal/socks5"
+	"proxychan/internal/system"
 )
 
 type Config struct {
@@ -18,6 +19,8 @@ type Config struct {
 	Dialer      dialer.Dialer
 	IdleTimeout time.Duration
 	Logger      *log.Logger
+
+	RequireAuth bool
 }
 
 type Server struct {
@@ -29,6 +32,20 @@ func New(cfg Config) *Server {
 		cfg.Logger = log.New(io.Discard, "", 0)
 	}
 	return &Server{cfg: cfg}
+}
+
+func RequiresAuth(listenAddr string) bool {
+	host, _, err := net.SplitHostPort(listenAddr)
+	if err != nil {
+		return true // fail closed
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return true
+	}
+
+	return !ip.IsLoopback()
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -61,7 +78,11 @@ func (s *Server) handleConn(ctx context.Context, client net.Conn) {
 	defer client.Close()
 
 	_ = client.SetDeadline(time.Now().Add(15 * time.Second)) // handshake deadline
-	if err := socks5.HandleHandshake(client); err != nil {
+	err := socks5.HandleHandshake(client, socks5.HandshakeOptions{
+		RequireAuth: s.cfg.RequireAuth,
+		AuthFunc:    system.Authenticate,
+	})
+	if err != nil {
 		s.cfg.Logger.Printf("handshake error from %s: %v", client.RemoteAddr(), err)
 		return
 	}

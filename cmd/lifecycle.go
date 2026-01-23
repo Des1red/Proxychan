@@ -64,11 +64,13 @@ func buildPlan(logger *log.Logger, base dialer.Dialer, hops []dialer.ChainHop) *
 
 // runServer starts the server with the given configuration.
 func runServer(logger *log.Logger, plan *dialer.Plan) error {
+	requireAuth := server.RequiresAuth(*listenAddr)
 	srv := server.New(server.Config{
 		ListenAddr:  *listenAddr,
 		Dialer:      plan,
 		IdleTimeout: *idleTimeout,
 		Logger:      logger,
+		RequireAuth: requireAuth,
 	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
