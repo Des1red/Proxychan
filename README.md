@@ -14,11 +14,11 @@
 
 ### Why ProxyChan exists
 
-- ProxyChan is built around one idea:
+#### ProxyChan is built around one idea:
 
 - Separate who can connect from where traffic exits.
  
-- This lets you:
+#### This lets you:
  
 - centralize outbound traffic
  
