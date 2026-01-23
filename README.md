@@ -136,7 +136,7 @@ proxychan.exe install-service -listen 0.0.0.0:1090 -mode tor
 
 - non-local bind → auth enforced automatically
 
-- This prevents accidental open proxies while keeping local development simple.
+- This prevents accidental open proxies.
 
 ## Visibility & privacy
 
