@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"os"
 	"os/signal"
 	"proxychan/internal/dialer"
@@ -9,8 +11,18 @@ import (
 	"proxychan/internal/server"
 	"proxychan/internal/service"
 	"proxychan/internal/socks5"
+	"proxychan/internal/system"
 	"syscall"
 )
+
+func mustInitDB() *sql.DB {
+	db, err := system.InitDB()
+	if err != nil {
+		fmt.Println("db error:", err)
+		os.Exit(1)
+	}
+	return db
+}
 
 // loadChainIfEnabled loads the chain configuration if dynamic chain is enabled.
 func loadChainIfEnabled() []dialer.ChainHop {
@@ -58,7 +70,9 @@ func buildPlan(base dialer.Dialer, hops []dialer.ChainHop) *dialer.Plan {
 }
 
 // runServer starts the server with the given configuration.
-func runServer(plan *dialer.Plan) error {
+func runServer(
+	plan *dialer.Plan,
+	authFn func(username, password string) error, db *sql.DB) error {
 	requireAuth := server.RequiresAuth(*listenAddr)
 	srv := server.New(server.Config{
 		ListenAddr:  *listenAddr,
@@ -66,12 +80,13 @@ func runServer(plan *dialer.Plan) error {
 		IdleTimeout: *idleTimeout,
 		Logger:      logging.GetLogger(), // Pass logrus logger
 		RequireAuth: requireAuth,
+		AuthFunc:    authFn,
 	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	return srv.Run(ctx)
+	return srv.Run(ctx, db)
 }
 
 // cleanup performs cleanup tasks (like stopping Tor service).

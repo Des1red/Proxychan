@@ -1,6 +1,9 @@
 package cmd
 
-import "proxychan/internal/logging"
+import (
+	"proxychan/internal/logging"
+	"proxychan/internal/system"
+)
 
 // Execute runs the main execution flow
 func Execute() {
@@ -10,8 +13,15 @@ func Execute() {
 	// Setup structured logging
 	logging.SetupLogger()
 
+	//Init db
+	db := mustInitDB()
+	defer db.Close()
+	authFn := func(username, password string) error {
+		return system.Authenticate(db, username, password)
+	}
+
 	// Handle management commands first (like add-user, del-user)
-	if handled := dispatchSystemCommands(); handled {
+	if handled := dispatchSystemCommands(db); handled {
 		return
 	}
 
@@ -25,7 +35,7 @@ func Execute() {
 	plan := buildPlan(base, hops)
 
 	// Run the server
-	err := runServer(plan)
+	err := runServer(plan, authFn, db)
 
 	// Cleanup (stop Tor service if needed)
 	cleanup()

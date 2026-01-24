@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"os"
@@ -34,7 +35,7 @@ func badFlagUse() (bool, string) {
 	return true, ""
 }
 
-func dispatchSystemCommands() bool {
+func dispatchSystemCommands(db *sql.DB) bool {
 	args := flag.Args()
 	if len(args) == 0 {
 		return false
@@ -42,15 +43,51 @@ func dispatchSystemCommands() bool {
 
 	switch args[0] {
 	case "add-user":
-		runAddUser()
+		runAddUser(db)
+
 	case "list-users":
-		runListUsers()
-	case "del-user":
-		runDeleteUser(args[1:])
+		runListUsers(db)
+
+	case "list-user":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan list-user <username>")
+			os.Exit(1)
+		}
+		runListUser(db, args[1])
+
+	case "delete-user":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan delete-user <username>")
+			os.Exit(1)
+		}
+		runDeleteUser(db, args[1])
+
+	case "activate-user":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan activate-user <username>")
+			os.Exit(1)
+		}
+		runActivateUser(db, args[1])
+
+	case "deactivate-user":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan deactivate-user <username>")
+			os.Exit(1)
+		}
+		runDeactivateUser(db, args[1])
+
+	case "activate-all":
+		runActivateAllUsers(db)
+
+	case "deactivate-all":
+		runDeactivateAllUsers(db)
+
 	case "install-service":
 		runInstallService()
+
 	case "remove-service":
 		runRemoveService()
+
 	default:
 		fmt.Printf("unknown command: %s\n\n", args[0])
 		printHelp()

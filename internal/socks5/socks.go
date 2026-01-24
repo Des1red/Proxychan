@@ -50,28 +50,28 @@ const (
 )
 
 // HandleHandshake negotiates SOCKS5 auth.
-func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) error {
+func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 	var hdr [2]byte
 	if _, err := io.ReadFull(rw, hdr[:]); err != nil {
 		logging.GetLogger().Errorf("Failed to read handshake header: %v", err)
-		return err
+		return "", err
 	}
 	if hdr[0] != socksVersion5 {
 		logging.GetLogger().Warnf("Unsupported SOCKS version: %d", hdr[0])
-		return ErrUnsupportedVersion
+		return "", ErrUnsupportedVersion
 	}
 
 	nMethods := int(hdr[1])
 	if nMethods <= 0 {
 		_, _ = rw.Write([]byte{socksVersion5, methodNoAccept})
 		logging.GetLogger().Warn("No acceptable methods in handshake")
-		return ErrNoAcceptableMethod
+		return "", ErrNoAcceptableMethod
 	}
 
 	methods := make([]byte, nMethods)
 	if _, err := io.ReadFull(rw, methods); err != nil {
 		logging.GetLogger().Errorf("Failed to read SOCKS methods: %v", err)
-		return err
+		return "", err
 	}
 
 	required := byte(methodNoAuth)
@@ -80,7 +80,7 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) error {
 		if opt.AuthFunc == nil {
 			_, _ = rw.Write([]byte{socksVersion5, methodNoAccept})
 			logging.GetLogger().Error("RequireAuth set but AuthFunc is nil")
-			return fmt.Errorf("socks5: RequireAuth set but AuthFunc is nil")
+			return "", fmt.Errorf("socks5: RequireAuth set but AuthFunc is nil")
 		}
 	}
 
@@ -94,34 +94,41 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) error {
 
 	if _, err := rw.Write([]byte{socksVersion5, chosen}); err != nil {
 		logging.GetLogger().Errorf("Failed to write SOCKS method response: %v", err)
-		return err
+		return "", err
 	}
 	if chosen == methodNoAccept {
 		logging.GetLogger().Warn("No acceptable authentication method selected")
-		return ErrNoAcceptableMethod
+		return "", ErrNoAcceptableMethod
 	}
 
+	var username string
 	if chosen == methodUserPass {
 		u, p, err := readUserPassAuth(rw)
 		if err != nil {
 			_ = writeUserPassStatus(rw, authStatusFailure)
 			logging.GetLogger().Errorf("Failed to read user/password: %v", err)
-			return err
+			return "", err
 		}
 
 		if err := opt.AuthFunc(u, p); err != nil {
 			_ = writeUserPassStatus(rw, authStatusFailure)
-			logging.GetLogger().Errorf("Authentication failed for user %s: %v", u, err)
-			return ErrAuthFailed
+			logging.GetLogger().Errorf("Authentication failed for user: %v", err)
+			return "", ErrAuthFailed
 		}
 
 		if err := writeUserPassStatus(rw, authStatusSuccess); err != nil {
 			logging.GetLogger().Errorf("Failed to write user pass status: %v", err)
-			return err
+			return "", err
+		}
+		// Return the username upon successful authentication
+		username = u
+		if err := writeUserPassStatus(rw, authStatusSuccess); err != nil {
+			logging.GetLogger().Errorf("Failed to write user pass status: %v", err)
+			return "", err
 		}
 	}
 
-	return nil
+	return username, nil // Return the username after successful authentication
 }
 
 func ReadRequest(r io.Reader) (Request, error) {

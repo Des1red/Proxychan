@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
 	"proxychan/internal/system"
@@ -10,7 +11,7 @@ import (
 	"golang.org/x/term"
 )
 
-func runAddUser() {
+func runAddUser(db *sql.DB) {
 	username := prompt("Username")
 	pass1 := promptPassword("Password")
 	pass2 := promptPassword("Confirm password")
@@ -20,7 +21,7 @@ func runAddUser() {
 		os.Exit(1)
 	}
 
-	if err := system.AddUser(username, pass1); err != nil {
+	if err := system.AddUser(db, username, pass1); err != nil {
 		fmt.Println("error:", err)
 		os.Exit(1)
 	}
@@ -28,8 +29,8 @@ func runAddUser() {
 	fmt.Println("user added:", username)
 }
 
-func runListUsers() {
-	users, err := system.ListUsers()
+func runListUsers(db *sql.DB) {
+	users, err := system.ListUsers(db)
 	if err != nil {
 		fmt.Println("error:", err)
 		os.Exit(1)
@@ -41,22 +42,31 @@ func runListUsers() {
 	}
 
 	for _, u := range users {
-		fmt.Println("-", u)
+		active, err := system.ListUserByUsername(db, u) // Use new function to get user status
+		if err != nil {
+			fmt.Println("error checking user status:", err)
+			os.Exit(1)
+		}
+		fmt.Printf("- %s (%s)\n", u, active)
 	}
 }
 
-func runDeleteUser(args []string) {
-	if len(args) != 1 {
-		fmt.Println("usage: proxychan delete-user <username>")
+func runListUser(db *sql.DB, username string) {
+	status, err := system.ListUserByUsername(db, username)
+	if err != nil {
+		fmt.Println("error:", err)
 		os.Exit(1)
 	}
 
-	if err := system.DeleteUser(args[0]); err != nil {
+	fmt.Printf("User %s is %s\n", username, status)
+}
+
+func runDeleteUser(db *sql.DB, username string) {
+	if err := system.DeleteUser(db, username); err != nil {
 		fmt.Println("error:", err)
 		os.Exit(1)
-	} else {
-		fmt.Printf("User %s deleted.", args[0])
 	}
+	fmt.Printf("User %s deleted.\n", username)
 }
 
 func prompt(label string) string {
@@ -75,4 +85,40 @@ func promptPassword(label string) string {
 		os.Exit(1)
 	}
 	return string(bytePwd)
+}
+
+func runActivateUser(db *sql.DB, username string) {
+	if err := system.ActivateUser(db, username); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+	fmt.Printf("User %s activated.\n", username)
+}
+
+func runDeactivateUser(db *sql.DB, username string) {
+	if err := system.DeactivateUser(db, username); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+	fmt.Printf("User %s deactivated.\n", username)
+}
+
+// runActivateAllUsers activates all users in the system.
+func runActivateAllUsers(db *sql.DB) {
+	if err := system.ActivateAllUsers(db); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	} else {
+		fmt.Println("All users activated.")
+	}
+}
+
+// runDeactivateAllUsers deactivates all users in the system.
+func runDeactivateAllUsers(db *sql.DB) {
+	if err := system.DeactivateAllUsers(db); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	} else {
+		fmt.Println("All users deactivated.")
+	}
 }

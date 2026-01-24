@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net"
 	"strings"
@@ -23,6 +24,7 @@ type Config struct {
 	Logger      *logrus.Logger
 
 	RequireAuth bool
+	AuthFunc    func(username, password string) error
 }
 
 type Server struct {
@@ -50,7 +52,7 @@ func RequiresAuth(listenAddr string) bool {
 	return !ip.IsLoopback()
 }
 
-func (s *Server) Run(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context, db *sql.DB) error {
 	ln, err := net.Listen("tcp", s.cfg.ListenAddr)
 	if err != nil {
 		return err
@@ -79,21 +81,38 @@ func (s *Server) Run(ctx context.Context) error {
 			s.cfg.Logger.Errorf("accept error: %v", err)
 			continue
 		}
-		go s.handleConn(ctx, c)
+		go s.handleConn(ctx, c, db)
 	}
 }
 
-func (s *Server) handleConn(ctx context.Context, client net.Conn) {
+func (s *Server) handleConn(ctx context.Context, client net.Conn, db *sql.DB) {
 	defer client.Close()
-
+	// Set deadline for handshake
 	_ = client.SetDeadline(time.Now().Add(15 * time.Second)) // handshake deadline
-	err := socks5.HandleHandshake(client, socks5.HandshakeOptions{
+	// Perform authentication handshake
+	username, err := socks5.HandleHandshake(client, socks5.HandshakeOptions{
 		RequireAuth: s.cfg.RequireAuth,
-		AuthFunc:    system.Authenticate,
+		AuthFunc:    s.cfg.AuthFunc,
 	})
 	if err != nil {
 		s.cfg.Logger.Warnf("handshake error from %s: %v", client.RemoteAddr(), err)
 		return
+	}
+
+	// If authentication is required, check the user status
+	if s.cfg.RequireAuth {
+		// Check if the user is active
+		active, err := system.IsActive(db, username)
+		if err != nil {
+			s.cfg.Logger.Warnf("error checking if user %s is active: %v", username, err)
+			return
+		}
+		// If the user is inactive, reject the connection
+		if !active {
+			s.cfg.Logger.Warnf("user %s is inactive, rejecting connection", username)
+			_ = socks5.WriteReply(client, 0x05) // Connection refused
+			return
+		}
 	}
 
 	req, err := socks5.ReadRequest(client)
