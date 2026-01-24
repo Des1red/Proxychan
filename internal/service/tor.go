@@ -35,11 +35,6 @@ func TorServiceStart(torSocksAddr string) {
 	ans, _ := reader.ReadString('\n')
 	ans = strings.TrimSpace(strings.ToLower(ans))
 
-	if ans != "y" && ans != "yes" {
-		fmt.Println("Tor is required. Exiting.")
-		os.Exit(1)
-	}
-
 	if err := ctrl.StartTor(); err != nil {
 		logging.GetLogger().Fatalf("Failed to start Tor: %v", err)
 	} else {
