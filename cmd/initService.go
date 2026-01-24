@@ -22,6 +22,11 @@ func currentBinaryPath() string {
 }
 
 func runInstallService() {
+	// Check if the user is running as root
+	if os.Geteuid() != 0 {
+		fmt.Println("Error: Installing the service requires root privileges. Please run with sudo.")
+		os.Exit(1)
+	}
 	bin := currentBinaryPath()
 
 	cfg := systemserviceinstall.InstallConfig{
@@ -37,4 +42,12 @@ func runInstallService() {
 	}
 
 	fmt.Println("service installed successfully")
+}
+
+func runRemoveService() {
+	if err := systemserviceinstall.Remove(); err != nil {
+		fmt.Println("service removal failed:", err)
+		os.Exit(1)
+	}
+	fmt.Println("service removed successfully")
 }

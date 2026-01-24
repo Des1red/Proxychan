@@ -53,3 +53,23 @@ func installSystemd(cfg InstallConfig) error {
 
 	return nil
 }
+
+func removeSystemd() error {
+	unitPath := "/etc/systemd/system/proxychan.service"
+
+	// Stop + disable (best-effort, idempotent)
+	_ = exec.Command("systemctl", "stop", "proxychan").Run()
+	_ = exec.Command("systemctl", "disable", "proxychan").Run()
+
+	// Remove unit file
+	if err := os.Remove(unitPath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	// Reload systemd
+	if err := exec.Command("systemctl", "daemon-reload").Run(); err != nil {
+		return err
+	}
+
+	return nil
+}

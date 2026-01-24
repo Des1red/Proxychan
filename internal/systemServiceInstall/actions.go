@@ -24,3 +24,16 @@ func Install(cfg InstallConfig) error {
 		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
 }
+
+func Remove() error {
+	switch runtime.GOOS {
+	case "linux":
+		return removeSystemd()
+	case "darwin":
+		return removeLaunchd()
+	case "windows":
+		return removeWindowsService()
+	default:
+		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
+}

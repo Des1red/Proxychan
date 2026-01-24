@@ -52,3 +52,17 @@ func installLaunchd(cfg InstallConfig) error {
 
 	return nil
 }
+
+func removeLaunchd() error {
+	const plistPath = "/Library/LaunchDaemons/com.proxychan.proxy.plist"
+
+	// Unload (best-effort)
+	_ = exec.Command("launchctl", "bootout", "system/com.proxychan.proxy").Run()
+
+	// Remove plist
+	if err := os.Remove(plistPath); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
+}

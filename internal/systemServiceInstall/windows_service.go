@@ -36,3 +36,13 @@ func installWindowsService(cfg InstallConfig) error {
 
 	return nil
 }
+
+func removeWindowsService() error {
+	const serviceName = "ProxyChan"
+
+	// Best-effort stop + delete
+	_ = exec.Command("sc.exe", "stop", serviceName).Run()
+	_ = exec.Command("sc.exe", "delete", serviceName).Run()
+
+	return nil
+}

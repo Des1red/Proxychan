@@ -45,10 +45,22 @@ func printHelp() {
 		clihelp.F("del-user", "string", "Deletes existing user"),
 	)
 	fmt.Println()
+
+	fmt.Println("auto-configuration:")
+	clihelp.Print(
+		clihelp.F("install-service", "", "Install proxychan as a system service"),
+		clihelp.F("remove-service", "", "Remove proxychan system service"),
+	)
+	fmt.Println()
 	// ─── Notes ───────────────────────────────────────────────
 	fmt.Println("Notes:")
 	fmt.Println("  • SOCKS5 hops only")
 	fmt.Println("  • No retries")
 	fmt.Println("  • Dead hop = hard failure")
 	fmt.Println("  • Tor must be either base OR hop, not both")
+
+	fmt.Println("Auto-config Notes:")
+	fmt.Println("  • install-service / remove-service require root/admin privileges")
+	fmt.Println("  • use a compiled binary (not `go run`)")
+	fmt.Println("  • usage : sudo ./proxychan --flag1 --flag2 install-service")
 }
