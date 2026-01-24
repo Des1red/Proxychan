@@ -55,7 +55,7 @@ func dispatchSystemCommands(db *sql.DB) bool {
 		}
 		runListUser(db, args[1])
 
-	case "delete-user":
+	case "del-user":
 		if len(args) != 2 {
 			fmt.Println("usage: proxychan delete-user <username>")
 			os.Exit(1)

@@ -41,12 +41,13 @@ func printHelp() {
 	fmt.Println("User management:")
 	clihelp.Print(
 		clihelp.F("add-user", "", "Initiates user creation"),
-		clihelp.F("list-users", "", "Prints list of existing users"),
 		clihelp.F("del-user", "string", "Deletes existing user"),
+		clihelp.F("list-users", "", "Prints list of existing users"),
+		clihelp.F("list-user", "string", "Prints info of specific user"),
 		clihelp.F("activate-user", "string", "Activates access to specific user"),
-		clihelp.F("activate-all", "string", "Activates access to specific user"),
+		clihelp.F("activate-all", "", "Activates access to specific user"),
 		clihelp.F("deactivate-user", "string", "Deactivates access to specific user"),
-		clihelp.F("deactivate-all", "string", "Deactivates access to all users"),
+		clihelp.F("deactivate-all", "", "Deactivates access to all users"),
 	)
 	fmt.Println()
 
