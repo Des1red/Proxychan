@@ -14,15 +14,16 @@ var Logger *logrus.Logger
 
 // SetupLogger initializes logrus with log rotation and date-based log file naming
 func SetupLogger() {
-	// Get the current working directory (project root)
-	projectRoot, err := os.Getwd()
+	exePath, err := os.Executable()
 	if err != nil {
-		fmt.Println("Error getting the current working directory:", err)
+		fmt.Println("failed to get executable path:", err)
 		return
 	}
 
-	// Define the logs directory (inside the Proxies folder)
-	logDir := filepath.Join(projectRoot, "proxychan_logs")
+	exePath, _ = filepath.EvalSymlinks(exePath)
+	baseDir := filepath.Dir(exePath)
+
+	logDir := filepath.Join(baseDir, "proxychan_logs")
 
 	// Ensure logs directory exists
 	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
