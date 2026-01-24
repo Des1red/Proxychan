@@ -55,6 +55,19 @@
 - macOS (launchd)
 
 - Windows (Service Manager)
+```
+# install
+sudo ./proxychan --flag1 --flag2 --flag3 .etc install-service
+
+# control
+sudo systemctl start proxychan
+sudo systemctl stop proxychan
+sudo systemctl restart proxychan
+sudo systemctl status proxychan
+
+# remove
+sudo ./proxychan remove-service
+```
 
 ## Quick start
 #### Build
