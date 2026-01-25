@@ -12,25 +12,15 @@ import (
 
 var Logger *logrus.Logger
 
+const logDir = "/var/log/proxychan"
+
 // SetupLogger initializes logrus with log rotation and date-based log file naming
 func SetupLogger() {
-	exePath, err := os.Executable()
-	if err != nil {
-		fmt.Println("failed to get executable path:", err)
-		return
-	}
 
-	exePath, _ = filepath.EvalSymlinks(exePath)
-	baseDir := filepath.Dir(exePath)
-
-	logDir := filepath.Join(baseDir, "proxychan_logs")
-
-	// Ensure logs directory exists
-	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(logDir, 0750); err != nil {
 		fmt.Println("Error creating logs directory:", err)
 		return
 	}
-
 	// Get the current date for log file naming
 	currentDate := time.Now().Format("2006-01-02") // Format: YYYY-MM-DD
 	logFilePath := filepath.Join(logDir, currentDate+".log")

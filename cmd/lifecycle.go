@@ -16,12 +16,11 @@ import (
 )
 
 func mustInitDB() *sql.DB {
-	db, err, msg := system.InitDB()
+	db, err := system.InitDB()
 	if err != nil {
 		fmt.Println("db error:", err)
 		os.Exit(1)
 	}
-	logging.GetLogger().Infof(msg)
 	return db
 }
 

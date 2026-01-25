@@ -99,6 +99,26 @@ func dispatchSystemCommands(db *sql.DB) bool {
 			os.Exit(1)
 		}
 		runBlockIP(db, args[1])
+	case "delete-ip":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan delete-ip <IP>")
+			os.Exit(1)
+		}
+		runDeleteIP(db, args[1])
+		return true
+
+	case "list-whitelist":
+		runListWhitelist(db)
+		return true
+
+	case "clear-whitelist":
+		runClearWhitelist(db)
+		return true
+
+	case "status-whitelist":
+		runWhitelistStatus(db)
+		return true
+
 	default:
 		fmt.Printf("unknown command: %s\n\n", args[0])
 		printHelp()
@@ -112,6 +132,11 @@ func dispatchSystemCommands(db *sql.DB) bool {
 func setupFlagsAndParse() {
 	flag.Usage = printHelp
 	flag.Parse()
+
+	// If a system command is present, skip flag validation
+	if len(flag.Args()) > 0 {
+		return
+	}
 
 	// Check flag usage validity
 	ok, msg := badFlagUse()

@@ -51,6 +51,43 @@ func printHelp() {
 	)
 	fmt.Println()
 
+	fmt.Println("White List management:")
+	fmt.Println("White List management:")
+	clihelp.Print(
+		clihelp.F(
+			"allow-ip",
+			"string",
+			"Allow IP or CIDR range (e.g. 192.168.1.5 or 192.168.1.0/24)",
+		),
+		clihelp.F(
+			"block-ip",
+			"string",
+			"Disable access for an IP or CIDR range (keeps entry)",
+		),
+		clihelp.F(
+			"delete-ip",
+			"string",
+			"Remove IP or CIDR range from whitelist entirely",
+		),
+		clihelp.F(
+			"list-whitelist",
+			"",
+			"Print all whitelisted IPs and CIDR ranges",
+		),
+		clihelp.F(
+			"status-whitelist",
+			"",
+			"Show whitelist version and entry count",
+		),
+		clihelp.F(
+			"clear-whitelist",
+			"",
+			"Remove all whitelist entries and reset version",
+		),
+	)
+
+	fmt.Println()
+
 	fmt.Println("auto-configuration:")
 	clihelp.Print(
 		clihelp.F("install-service", "", "Install proxychan as a system service"),

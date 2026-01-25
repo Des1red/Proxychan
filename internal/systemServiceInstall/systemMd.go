@@ -13,7 +13,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=%s
+User=root
 ExecStart=%s -listen %s -mode %s
 Restart=on-failure
 RestartSec=3
@@ -29,7 +29,6 @@ func installSystemd(cfg InstallConfig) error {
 
 	content := fmt.Sprintf(
 		systemdUnit,
-		cfg.User,
 		cfg.BinaryPath,
 		cfg.ListenAddr,
 		cfg.Mode,

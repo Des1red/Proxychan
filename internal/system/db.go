@@ -5,41 +5,49 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func InitDB() (*sql.DB, error, string) {
-	base, err := os.UserConfigDir()
-	if err != nil {
-		return nil, fmt.Errorf("get user config dir: %w", err), ""
-	}
+func InitDB() (*sql.DB, error) {
+	base := ""
+	switch runtime.GOOS {
+	case "linux":
+		base = "/var/lib/proxychan"
+	case "darwin":
+		base = "/Library/Application Support/ProxyChan"
+	case "windows":
+		pd := os.Getenv("ProgramData")
+		if pd == "" {
+			return nil, fmt.Errorf("ProgramData not set")
+		}
+		base = filepath.Join(pd, "ProxyChan")
+	default:
+		return nil, fmt.Errorf("unable to resolve OS: %s", runtime.GOOS)
 
-	dir := filepath.Join(base, "proxychan")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, fmt.Errorf("create proxychan dir: %w", err), ""
 	}
-
-	dbPath := filepath.Join(dir, "proxychan.db")
+	if err := os.MkdirAll(base, 0750); err != nil {
+		return nil, err
+	}
+	dbPath := filepath.Join(base, "proxychan.db")
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("open db: %w", err), ""
+		return nil, err
 	}
 
-	// Safety: fail early if DB is not writable
 	if err := db.Ping(); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("ping db: %w", err), ""
+		return nil, err
 	}
 
 	if err := initSchema(db); err != nil {
 		db.Close()
-		return nil, err, ""
+		return nil, err
 	}
 
-	return db, nil, fmt.Sprintf("DB path=%s uid=%d user=%s", dbPath, os.Getuid(), os.Getenv("USER"))
-
+	return db, nil
 }
 
 func initSchema(db *sql.DB) error {

@@ -150,3 +150,68 @@ func runBlockIP(db *sql.DB, ip string) {
 
 	fmt.Println("blocked:", ip)
 }
+
+func runListWhitelist(db *sql.DB) {
+	list, err := system.ListWhitelist(db)
+	if err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	if len(list) == 0 {
+		fmt.Println("whitelist is empty")
+		return
+	}
+
+	for _, e := range list {
+		state := "disabled"
+		if e.Enabled {
+			state = "enabled"
+		}
+		fmt.Printf("- %s (%s)\n", e.CIDR, state)
+	}
+}
+
+func runDeleteIP(db *sql.DB, ip string) {
+	if err := system.DeleteIP(db, ip); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	if err := system.BumpWhitelistVersion(db); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("deleted:", ip)
+}
+
+func runWhitelistStatus(db *sql.DB) {
+	s, err := system.GetWhitelistStatus(db)
+	if err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf(
+		"version=%d total=%d enabled=%d disabled=%d\n",
+		s.Version,
+		s.Total,
+		s.Enabled,
+		s.Disabled,
+	)
+}
+
+func runClearWhitelist(db *sql.DB) {
+	if err := system.ClearWhitelist(db); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	if err := system.BumpWhitelistVersion(db); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("whitelist cleared (localhost preserved)")
+}
