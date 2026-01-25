@@ -14,6 +14,7 @@ import (
 
 var (
 	listenAddr     = flag.String("listen", "127.0.0.1:1080", "listen address for SOCKS5 proxy")
+	httpListen     = flag.String("http-listen", "", "listen address for HTTP CONNECT proxy")
 	mode           = flag.String("mode", "direct", "egress mode: direct | tor")
 	torSocksAddr   = flag.String("tor-socks", "127.0.0.1:9050", "Tor SOCKS5 address (mode=tor)")
 	connectTimeout = flag.Duration("connect-timeout", 10*time.Second, "outbound connect timeout")

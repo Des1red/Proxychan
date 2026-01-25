@@ -82,10 +82,13 @@ func runServer(
 	}
 
 	srv := server.New(server.Config{
-		ListenAddr:  *listenAddr,
+		ListenAddr:     *listenAddr,
+		HTTPListenAddr: *httpListen,
+
 		Dialer:      plan,
 		IdleTimeout: *idleTimeout,
 		Logger:      logging.GetLogger(), // Pass logrus logger
+
 		RequireAuth: requireAuth,
 		AuthFunc:    authFn,
 	})

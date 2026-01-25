@@ -16,7 +16,9 @@ import (
 )
 
 type Config struct {
-	ListenAddr  string
+	ListenAddr     string // SOCKS5
+	HTTPListenAddr string // HTTP CONNECT (optional)
+
 	Dialer      dialer.Dialer
 	IdleTimeout time.Duration
 	Logger      *logrus.Logger
@@ -98,6 +100,28 @@ func (s *Server) startListener(ctx context.Context) (net.Listener, error) {
 	return ln, nil
 }
 
+func (s *Server) startHTTPProxy(ctx context.Context, db *sql.DB) {
+	ln, err := net.Listen("tcp", s.cfg.HTTPListenAddr)
+	if err != nil {
+		s.cfg.Logger.Fatalf("http proxy listen failed: %v", err)
+	}
+
+	s.cfg.Logger.Infof("HTTP CONNECT proxy listening on %s", s.cfg.HTTPListenAddr)
+
+	go func() {
+		<-ctx.Done()
+		_ = ln.Close()
+	}()
+
+	for {
+		c, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		go s.handleHTTPConn(ctx, c, db)
+	}
+}
+
 func (s *Server) Run(ctx context.Context, db *sql.DB) error {
 	if err := s.initPolicies(ctx, db); err != nil {
 		return err
@@ -109,6 +133,10 @@ func (s *Server) Run(ctx context.Context, db *sql.DB) error {
 	}
 
 	s.logStartupInfo()
+
+	if s.cfg.HTTPListenAddr != "" {
+		go s.startHTTPProxy(ctx, db)
+	}
 
 	go s.runAdminEndpoint(ctx)
 
