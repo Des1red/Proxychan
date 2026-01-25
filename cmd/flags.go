@@ -87,7 +87,18 @@ func dispatchSystemCommands(db *sql.DB) bool {
 
 	case "remove-service":
 		runRemoveService()
-
+	case "allow-ip":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan allow-ip <IP>")
+			os.Exit(1)
+		}
+		runAllowIP(db, args[1])
+	case "block-ip":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan block-ip <IP>")
+			os.Exit(1)
+		}
+		runBlockIP(db, args[1])
 	default:
 		fmt.Printf("unknown command: %s\n\n", args[0])
 		printHelp()

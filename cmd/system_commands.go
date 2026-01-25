@@ -122,3 +122,31 @@ func runDeactivateAllUsers(db *sql.DB) {
 		fmt.Println("All users deactivated.")
 	}
 }
+
+func runAllowIP(db *sql.DB, ip string) {
+	if err := system.AllowIP(db, ip); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	if err := system.BumpWhitelistVersion(db); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("allowed:", ip)
+}
+
+func runBlockIP(db *sql.DB, ip string) {
+	if err := system.BlockIP(db, ip); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	if err := system.BumpWhitelistVersion(db); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("blocked:", ip)
+}

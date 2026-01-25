@@ -16,11 +16,12 @@ import (
 )
 
 func mustInitDB() *sql.DB {
-	db, err := system.InitDB()
+	db, err, msg := system.InitDB()
 	if err != nil {
 		fmt.Println("db error:", err)
 		os.Exit(1)
 	}
+	logging.GetLogger().Infof(msg)
 	return db
 }
 
@@ -85,7 +86,6 @@ func runServer(
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
 	return srv.Run(ctx, db)
 }
 

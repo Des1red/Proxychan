@@ -19,7 +19,6 @@ func Execute() {
 	authFn := func(username, password string) error {
 		return system.Authenticate(db, username, password)
 	}
-
 	// Handle management commands first (like add-user, del-user)
 	if handled := dispatchSystemCommands(db); handled {
 		return
