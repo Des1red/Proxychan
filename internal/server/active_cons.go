@@ -184,25 +184,16 @@ func ListActiveConnectionsByIP() ([]ConnGroup, error) {
 	return groups, nil
 }
 
-func ListActiveConnections() ([]ActiveConn, error) {
-	client := &http.Client{
-		Timeout: 3 * time.Second,
-	}
-
-	resp, err := client.Get("http://127.0.0.1:6060/connections")
+func GetActiveConnectionCount() (int, error) {
+	groups, err := ListActiveConnectionsByIP()
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to proxy admin endpoint: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("admin endpoint returned status %s", resp.Status)
+		return 0, err
 	}
 
-	var conns []ActiveConn
-	if err := json.NewDecoder(resp.Body).Decode(&conns); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	total := 0
+	for _, g := range groups {
+		total += g.Count
 	}
 
-	return conns, nil
+	return total, nil
 }

@@ -1,13 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"proxychan/internal/server"
 	"runtime"
-	"time"
 )
 
 func runDoctor(dbPath, logPath string) {
@@ -49,33 +46,13 @@ func checkPath(path string) {
 func checkRuntime() {
 	fmt.Println("\nRuntime")
 
-	client := &http.Client{Timeout: 2 * time.Second}
-
-	resp, err := client.Get("http://127.0.0.1:6060/connections/by-ip")
+	count, err := server.GetActiveConnectionCount()
 	if err != nil {
 		fmt.Println("  Admin endpoint  : unreachable")
-		fmt.Printf("  Error  : %v\n", err)
+		fmt.Printf("  Error           : %v\n", err)
 		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("  Admin endpoint  : error (%s)\n", resp.Status)
-		return
-	}
-
-	var groups []server.ConnGroup
-	if err := json.NewDecoder(resp.Body).Decode(&groups); err != nil {
-		fmt.Println("  Admin endpoint  : reachable")
-		fmt.Println("  Response        : invalid JSON")
-		return
-	}
-
-	total := 0
-	for _, g := range groups {
-		total += g.Count
 	}
 
 	fmt.Println("  Admin endpoint  : reachable")
-	fmt.Printf("  Active tunnels  : %d\n", total)
+	fmt.Printf("  Active tunnels  : %d\n", count)
 }
