@@ -8,8 +8,9 @@ import (
 type InstallConfig struct {
 	BinaryPath string
 	ListenAddr string
-	Mode       string // direct | tor
-	User       string // optional
+	Mode       string
+	NoAuth     bool
+	User       string
 }
 
 func Install(cfg InstallConfig) error {

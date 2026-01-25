@@ -296,36 +296,43 @@ type ConnView struct {
 }
 
 func runListConnections(db *sql.DB) {
-	conns, err := server.ListActiveConnections()
+	groups, err := server.ListActiveConnectionsByIP()
 	if err != nil {
 		fmt.Println("error:", err)
 		os.Exit(1)
 	}
 
-	if len(conns) == 0 {
+	if len(groups) == 0 {
 		fmt.Println("no active connections")
 		return
 	}
 
-	fmt.Printf("%-5s %-10s %-15s %-25s %-20s\n",
-		"ID", "USER", "SOURCE", "DESTINATION", "AGE",
-	)
-
 	now := time.Now()
-	for _, c := range conns {
-		age := now.Sub(c.StartedAt).Truncate(time.Second)
 
-		user := c.Username
-		if user == "" {
-			user = "-"
+	for _, g := range groups {
+		fmt.Printf(
+			"SOURCE %s (%d connections)\n",
+			g.SourceIP,
+			g.Count,
+		)
+
+		for _, c := range g.Conns {
+			age := now.Sub(c.StartedAt).Truncate(time.Second)
+
+			user := c.Username
+			if user == "" {
+				user = "-"
+			}
+
+			fmt.Printf(
+				"  ID=%d USER=%s DST=%s AGE=%s\n",
+				c.ID,
+				user,
+				c.Destination,
+				age,
+			)
 		}
 
-		fmt.Printf("%-5d %-10s %-15s %-25s %-20s\n",
-			c.ID,
-			user,
-			c.SourceIP,
-			c.Destination,
-			age,
-		)
+		fmt.Println()
 	}
 }

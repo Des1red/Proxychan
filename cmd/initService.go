@@ -34,6 +34,7 @@ func runInstallService() {
 		ListenAddr: *listenAddr,
 		Mode:       *mode,
 		User:       os.Getenv("USER"),
+		NoAuth:     *noAuth,
 	}
 
 	if err := systemserviceinstall.Install(cfg); err != nil {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 const launchdPlist = `<?xml version="1.0" encoding="UTF-8"?>
@@ -15,11 +16,7 @@ const launchdPlist = `<?xml version="1.0" encoding="UTF-8"?>
   <string>com.proxychan.proxy</string>
   <key>ProgramArguments</key>
   <array>
-    <string>%s</string>
-    <string>-listen</string>
-    <string>%s</string>
-    <string>-mode</string>
-    <string>%s</string>
+%s
   </array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
@@ -30,11 +27,21 @@ const launchdPlist = `<?xml version="1.0" encoding="UTF-8"?>
 func installLaunchd(cfg InstallConfig) error {
 	const plistPath = "/Library/LaunchDaemons/com.proxychan.proxy.plist"
 
+	args := []string{
+		fmt.Sprintf("    <string>%s</string>", cfg.BinaryPath),
+		"    <string>-listen</string>",
+		fmt.Sprintf("    <string>%s</string>", cfg.ListenAddr),
+		"    <string>-mode</string>",
+		fmt.Sprintf("    <string>%s</string>", cfg.Mode),
+	}
+
+	if cfg.NoAuth {
+		args = append(args, "    <string>--no-auth</string>")
+	}
+
 	content := fmt.Sprintf(
 		launchdPlist,
-		cfg.BinaryPath,
-		cfg.ListenAddr,
-		cfg.Mode,
+		strings.Join(args, "\n"),
 	)
 
 	if err := os.WriteFile(plistPath, []byte(content), 0644); err != nil {

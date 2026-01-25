@@ -86,6 +86,32 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 		}
 	}
 
+	if !opt.RequireAuth {
+		if hasNoAuth {
+			_, _ = rw.Write([]byte{socksVersion5, methodNoAuth})
+			return "", nil
+		}
+
+		if hasUserPass {
+			// accept USER/PASS but DO NOT validate
+			if _, err := rw.Write([]byte{socksVersion5, methodUserPass}); err != nil {
+				return "", err
+			}
+
+			// consume credentials but ignore them
+			_, _, err := readUserPassAuth(rw)
+			if err != nil {
+				writeUserPassStatus(rw, authStatusFailure)
+				return "", err
+			}
+
+			writeUserPassStatus(rw, authStatusSuccess)
+			return "", nil
+		}
+
+		_, _ = rw.Write([]byte{socksVersion5, methodNoAccept})
+		return "", ErrNoAcceptableMethod
+	}
 	// ───────────── AUTH REQUIRED ─────────────
 	if opt.RequireAuth {
 		if !hasUserPass {
@@ -110,12 +136,6 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 
 		writeUserPassStatus(rw, authStatusSuccess)
 		return u, nil
-	}
-
-	// ───────────── NO AUTH ─────────────
-	if hasNoAuth {
-		rw.Write([]byte{0x05, methodNoAuth})
-		return "", nil
 	}
 
 	rw.Write([]byte{0x05, methodNoAccept})

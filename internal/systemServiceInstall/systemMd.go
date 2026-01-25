@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 const systemdUnit = `[Unit]
@@ -14,7 +15,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-ExecStart=%s -listen %s -mode %s
+ExecStart=%s
 Restart=on-failure
 RestartSec=3
 KillSignal=SIGTERM
@@ -27,12 +28,20 @@ WantedBy=multi-user.target
 func installSystemd(cfg InstallConfig) error {
 	unitPath := "/etc/systemd/system/proxychan.service"
 
-	content := fmt.Sprintf(
-		systemdUnit,
+	// Build ExecStart arguments
+	args := []string{
 		cfg.BinaryPath,
-		cfg.ListenAddr,
-		cfg.Mode,
-	)
+		"-listen", cfg.ListenAddr,
+		"-mode", cfg.Mode,
+	}
+
+	if cfg.NoAuth {
+		args = append(args, "--no-auth")
+	}
+
+	execStart := strings.Join(args, " ")
+
+	content := fmt.Sprintf(systemdUnit, execStart)
 
 	if err := os.WriteFile(unitPath, []byte(content), 0644); err != nil {
 		return err
