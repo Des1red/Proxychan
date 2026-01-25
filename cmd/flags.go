@@ -113,7 +113,7 @@ func dispatchSystemCommands(db *sql.DB) bool {
 			os.Exit(1)
 		}
 		runBlockIP(db, args[1])
-	case "delete-ip":
+	case "del-ip":
 		if len(args) != 2 {
 			fmt.Println("usage: proxychan delete-ip <IP>")
 			os.Exit(1)
@@ -149,7 +149,7 @@ func dispatchSystemCommands(db *sql.DB) bool {
 		runAllowDestination(db, args[1])
 		return true
 
-	case "delete-dest":
+	case "del-dest":
 		if len(args) != 2 {
 			fmt.Println("usage: proxychan delete-dest <ip|cidr|domain|.domain>")
 			os.Exit(1)

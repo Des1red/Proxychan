@@ -199,14 +199,14 @@ Outbound connections can be blocked by destination:
 ### Source whitelist (client IPs)
 - allow-ip
 - block-ip
-- delete-ip
+- del-ip
 - list-whitelist
 - clear-whitelist
 
 ### Destination blacklist (egress)
 - block-dest
 - allow-dest
-- delete-dest
+- del-dest
 - list-blacklist
 - clear-blacklist
 
