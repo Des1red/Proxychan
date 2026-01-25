@@ -88,6 +88,20 @@ func initSchema(db *sql.DB) error {
 	INSERT OR IGNORE INTO whitelist (cidr, enabled) VALUES
 		('127.0.0.1/32', 1),
 		('::1/128', 1);
+
+	CREATE TABLE IF NOT EXISTS denylist (
+	    pattern TEXT PRIMARY KEY,
+	    type TEXT NOT NULL,         -- ip | cidr | domain_exact | domain_suffix
+	    enabled INTEGER NOT NULL DEFAULT 1
+	);
+	
+	CREATE TABLE IF NOT EXISTS denylist_meta (
+	    id INTEGER PRIMARY KEY CHECK (id = 1),
+	    version INTEGER NOT NULL
+	);
+	
+	INSERT OR IGNORE INTO denylist_meta (id, version)
+	VALUES (1, 1);
 	`
 
 	_, err := db.Exec(schema)

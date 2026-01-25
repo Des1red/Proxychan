@@ -119,6 +119,35 @@ func dispatchSystemCommands(db *sql.DB) bool {
 	case "status-whitelist":
 		runWhitelistStatus(db)
 		return true
+
+	case "block-dest":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan block-dest<ip|cidr|domain|.domain>")
+			os.Exit(1)
+		}
+		runBlockDestination(db, args[1])
+		return true
+
+	case "allow-dest":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan allow-dest<ip|cidr|domain|.domain>")
+			os.Exit(1)
+		}
+		runAllowDestination(db, args[1])
+		return true
+
+	case "delete-dest":
+		if len(args) != 2 {
+			fmt.Println("usage: proxychan delete-dest <ip|cidr|domain|.domain>")
+			os.Exit(1)
+		}
+		runDeleteDestination(db, args[1])
+		return true
+
+	case "list-blacklist":
+		runListBlacklist(db)
+		return true
+
 	case "doctor":
 		dbPath, _ := system.DBPath()
 		logDir, _ := logging.LogDir()

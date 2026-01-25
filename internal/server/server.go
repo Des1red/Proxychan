@@ -30,9 +30,17 @@ type Config struct {
 type Server struct {
 	cfg Config
 
+	// ip whitelist
 	mu               sync.RWMutex
 	whitelist        []net.IPNet
 	whitelistVersion int64
+
+	//destination blacklist
+	denyMu           sync.RWMutex
+	denyIPNets       []net.IPNet
+	denyDomainExact  map[string]struct{}
+	denyDomainSuffix []string
+	denyVersion      int64
 }
 
 func New(cfg Config) *Server {
@@ -40,6 +48,51 @@ func New(cfg Config) *Server {
 		cfg.Logger = logging.GetLogger()
 	}
 	return &Server{cfg: cfg}
+}
+
+func normalizeDestDomain(host string) string {
+	host = strings.ToLower(strings.TrimSpace(host))
+	host = strings.TrimSuffix(host, ".")
+	return host
+}
+
+func (s *Server) destDenied(host string) (hitType, hitPattern string, denied bool) {
+	// IP?
+	if ip := net.ParseIP(host); ip != nil {
+		s.denyMu.RLock()
+		nets := s.denyIPNets
+		s.denyMu.RUnlock()
+
+		for _, n := range nets {
+			if n.Contains(ip) {
+				return "ip/cidr", n.String(), true
+			}
+		}
+		return "", "", false
+	}
+
+	// Domain
+	d := normalizeDestDomain(host)
+	if d == "" {
+		return "", "", false
+	}
+
+	s.denyMu.RLock()
+	_, exact := s.denyDomainExact[d]
+	suffixes := s.denyDomainSuffix
+	s.denyMu.RUnlock()
+
+	if exact {
+		return "domain_exact", d, true
+	}
+
+	for _, suf := range suffixes {
+		if strings.HasSuffix(d, suf) {
+			return "domain_suffix", suf, true
+		}
+	}
+
+	return "", "", false
 }
 
 func (s *Server) whitelistPoller(ctx context.Context, db *sql.DB) {
@@ -79,6 +132,46 @@ func (s *Server) whitelistPoller(ctx context.Context, db *sql.DB) {
 	}
 }
 
+func (s *Server) denylistPoller(ctx context.Context, db *sql.DB) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			v, err := system.GetDenylistVersion(db)
+			if err != nil {
+				s.cfg.Logger.Warnf("denylist version check failed: %v", err)
+				continue
+			}
+
+			s.denyMu.RLock()
+			cur := s.denyVersion
+			s.denyMu.RUnlock()
+
+			if v != cur {
+				rt, err := system.LoadDenylist(db)
+				if err != nil {
+					s.cfg.Logger.Warnf("denylist reload failed: %v", err)
+					continue
+				}
+
+				s.denyMu.Lock()
+				s.denyIPNets = rt.IPNets
+				s.denyDomainExact = rt.DomainExact
+				s.denyDomainSuffix = rt.DomainSuffix
+				s.denyVersion = v
+				s.denyMu.Unlock()
+
+				s.cfg.Logger.Infof("denylist reloaded (ip/cidr=%d, exact=%d, suffix=%d)",
+					len(rt.IPNets), len(rt.DomainExact), len(rt.DomainSuffix))
+			}
+		}
+	}
+}
+
 func RequiresAuth(listenAddr string) bool {
 	host, _, err := net.SplitHostPort(listenAddr)
 	if err != nil {
@@ -109,6 +202,25 @@ func (s *Server) Run(ctx context.Context, db *sql.DB) error {
 	s.whitelistVersion = v
 	s.mu.Unlock()
 	go s.whitelistPoller(ctx, db)
+
+	rt, err := system.LoadDenylist(db)
+	if err != nil {
+		return err
+	}
+
+	dv, err := system.GetDenylistVersion(db)
+	if err != nil {
+		return err
+	}
+
+	s.denyMu.Lock()
+	s.denyIPNets = rt.IPNets
+	s.denyDomainExact = rt.DomainExact
+	s.denyDomainSuffix = rt.DomainSuffix
+	s.denyVersion = dv
+	s.denyMu.Unlock()
+
+	go s.denylistPoller(ctx, db)
 
 	ln, err := net.Listen("tcp", s.cfg.ListenAddr)
 	if err != nil {
@@ -201,6 +313,19 @@ func (s *Server) handleConn(ctx context.Context, client net.Conn, db *sql.DB) {
 		// Unsupported command or parse failure.
 		_ = socks5.WriteReply(client, 0x07) // Command not supported
 		s.cfg.Logger.Warnf("request error from %s: %v", client.RemoteAddr(), err)
+		return
+	}
+	// check destination blacklist rules
+	destHost, _, err := net.SplitHostPort(req.Address)
+	if err != nil {
+		_ = socks5.WriteReply(client, 0x01) // general failure
+		return
+	}
+
+	if typ, pat, denied := s.destDenied(destHost); denied {
+		_ = socks5.WriteReply(client, 0x02) // not allowed by ruleset
+		s.cfg.Logger.Warnf("egress denied user=%q src=%s dst=%s ruleType=%s rule=%s",
+			username, client.RemoteAddr().String(), req.Address, typ, pat)
 		return
 	}
 

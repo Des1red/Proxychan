@@ -53,36 +53,22 @@ func printHelp() {
 
 	fmt.Println("White List management:")
 	clihelp.Print(
-		clihelp.F(
-			"allow-ip",
-			"string",
-			"Allow IP or CIDR range (e.g. 192.168.1.5 or 192.168.1.0/24)",
-		),
-		clihelp.F(
-			"block-ip",
-			"string",
-			"Disable access for an IP or CIDR range (keeps entry)",
-		),
-		clihelp.F(
-			"delete-ip",
-			"string",
-			"Remove IP or CIDR range from whitelist entirely",
-		),
-		clihelp.F(
-			"list-whitelist",
-			"",
-			"Print all whitelisted IPs and CIDR ranges",
-		),
-		clihelp.F(
-			"status-whitelist",
-			"",
-			"Show whitelist version and entry count",
-		),
-		clihelp.F(
-			"clear-whitelist",
-			"",
-			"Remove all whitelist entries and reset version",
-		),
+		clihelp.F("allow-ip", "string", "Allow IP or CIDR range (e.g. 192.168.1.5 or 192.168.1.0/24)"),
+		clihelp.F("block-ip", "string", "Disable access for an IP or CIDR range (keeps entry)"),
+		clihelp.F("delete-ip", "string", "Remove IP or CIDR range from whitelist entirely"),
+		clihelp.F("list-whitelist", "", "Print all whitelisted IPs and CIDR ranges"),
+		clihelp.F("status-whitelist", "", "Show whitelist version and entry count"),
+		clihelp.F("clear-whitelist", "", "Disable all whitelist entries (localhost preserved)"),
+	)
+
+	fmt.Println()
+	fmt.Println("Destination Blacklist management:")
+	clihelp.Print(
+		clihelp.F("block-dest", "string", "Block outbound connections to a destination (IP, CIDR, domain, or .domain)"),
+		clihelp.F("allow-dest", "string", "Re-allow a previously blocked destination (keeps rule)"),
+		clihelp.F("delete-dest", "string", "Remove destination blacklist rule entirely"),
+		clihelp.F("list-blacklist", "", "Print all destination blacklist rules"),
+		clihelp.F("clear-blacklist", "", "Disable all destination blacklist rules (ALL destinations will be allowed)"),
 	)
 
 	fmt.Println()
@@ -94,6 +80,10 @@ func printHelp() {
 		clihelp.F("install-service", "", "Install proxychan as a system service"),
 		clihelp.F("remove-service", "", "Remove proxychan system service"),
 	)
+	fmt.Println()
+	fmt.Println("Policy Notes:")
+	fmt.Println("  • Whitelist applies to SOURCE IPs (clients)")
+	fmt.Println("  • Blacklist applies to DESTINATIONS (egress)")
 	fmt.Println()
 	// ─── Notes ───────────────────────────────────────────────
 	fmt.Println("Notes:")
