@@ -52,7 +52,6 @@ func printHelp() {
 	fmt.Println()
 
 	fmt.Println("White List management:")
-	fmt.Println("White List management:")
 	clihelp.Print(
 		clihelp.F(
 			"allow-ip",
@@ -87,7 +86,9 @@ func printHelp() {
 	)
 
 	fmt.Println()
-
+	fmt.Println("Doctor:")
+	clihelp.Print(clihelp.F("doctor", "", "Prints Log and DB paths"))
+	fmt.Println()
 	fmt.Println("auto-configuration:")
 	clihelp.Print(
 		clihelp.F("install-service", "", "Install proxychan as a system service"),

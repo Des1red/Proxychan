@@ -7,6 +7,7 @@ import (
 	"os"
 	"proxychan/internal/dialer"
 	"proxychan/internal/logging"
+	"proxychan/internal/system"
 	"time"
 )
 
@@ -117,6 +118,11 @@ func dispatchSystemCommands(db *sql.DB) bool {
 
 	case "status-whitelist":
 		runWhitelistStatus(db)
+		return true
+	case "doctor":
+		dbPath, _ := system.DBPath()
+		logDir, _ := logging.LogDir()
+		runDoctor(dbPath, logDir)
 		return true
 
 	default:

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/natefinch/lumberjack"
@@ -12,15 +13,46 @@ import (
 
 var Logger *logrus.Logger
 
-const logDir = "/var/log/proxychan"
+func LogDir() (string, error) {
+	switch runtime.GOOS {
+	case "linux":
+		return "/var/log/proxychan", nil
+	case "darwin":
+		return "/Library/Logs/ProxyChan", nil
+	case "windows":
+		pd := os.Getenv("ProgramData")
+		if pd == "" {
+			return "", fmt.Errorf("ProgramData not set")
+		}
+		return filepath.Join(pd, "ProxyChan", "logs"), nil
+	default:
+		return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
+}
+
+func fallbackLogger() {
+	Logger = logrus.New()
+	Logger.SetOutput(os.Stderr)
+	Logger.SetFormatter(&logrus.JSONFormatter{})
+	Logger.SetLevel(logrus.WarnLevel)
+}
 
 // SetupLogger initializes logrus with log rotation and date-based log file naming
 func SetupLogger() {
 
-	if err := os.MkdirAll(logDir, 0750); err != nil {
-		fmt.Println("Error creating logs directory:", err)
+	logDir, err := LogDir()
+	if err != nil {
+		fmt.Println("log path error:", err)
+		fallbackLogger()
 		return
 	}
+
+	if err := os.MkdirAll(logDir, 0750); err != nil {
+		fmt.Println("Error creating logs directory:", err)
+		fallbackLogger()
+		return
+	}
+
 	// Get the current date for log file naming
 	currentDate := time.Now().Format("2006-01-02") // Format: YYYY-MM-DD
 	logFilePath := filepath.Join(logDir, currentDate+".log")
@@ -46,6 +78,9 @@ func SetupLogger() {
 
 // GetLogger returns the global logrus Logger instance
 func GetLogger() *logrus.Logger {
+	if Logger == nil {
+		fallbackLogger()
+	}
 	return Logger
 }
 

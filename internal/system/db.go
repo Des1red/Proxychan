@@ -10,27 +10,31 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func InitDB() (*sql.DB, error) {
-	base := ""
+func DBPath() (string, error) {
 	switch runtime.GOOS {
 	case "linux":
-		base = "/var/lib/proxychan"
+		return "/var/lib/proxychan/proxychan.db", nil
 	case "darwin":
-		base = "/Library/Application Support/ProxyChan"
+		return "/Library/Application Support/ProxyChan/proxychan.db", nil
 	case "windows":
 		pd := os.Getenv("ProgramData")
 		if pd == "" {
-			return nil, fmt.Errorf("ProgramData not set")
+			return "", fmt.Errorf("ProgramData not set")
 		}
-		base = filepath.Join(pd, "ProxyChan")
+		return filepath.Join(pd, "ProxyChan", "proxychan.db"), nil
 	default:
-		return nil, fmt.Errorf("unable to resolve OS: %s", runtime.GOOS)
-
+		return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
-	if err := os.MkdirAll(base, 0750); err != nil {
+}
+func InitDB() (*sql.DB, error) {
+
+	dbPath, err := DBPath()
+	if err != nil {
 		return nil, err
 	}
-	dbPath := filepath.Join(base, "proxychan.db")
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0750); err != nil {
+		return nil, err
+	}
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
