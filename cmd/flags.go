@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"proxychan/internal/dialer"
 	"proxychan/internal/logging"
@@ -17,6 +18,7 @@ var (
 	torSocksAddr   = flag.String("tor-socks", "127.0.0.1:9050", "Tor SOCKS5 address (mode=tor)")
 	connectTimeout = flag.Duration("connect-timeout", 10*time.Second, "outbound connect timeout")
 	idleTimeout    = flag.Duration("idle-timeout", 2*time.Minute, "idle timeout for tunnels (0 disables)")
+	noAuth         = flag.Bool("no-auth", false, "disable username/password authentication (IP whitelist still enforced)")
 
 	dynamicChain = flag.Bool("dynamic-chain", false, "enable dynamic SOCKS5 hop chaining from YAML config")
 	chainConfig  = flag.String("chain-config", "", "path to YAML chain config (required when -dynamic-chain=true)")
@@ -33,6 +35,17 @@ func badFlagUse() (bool, string) {
 		}
 	}
 
+	// --no-auth is meaningless on localhost
+	if *noAuth {
+		host, _, err := net.SplitHostPort(*listenAddr)
+		if err != nil {
+			return false, "invalid listen address"
+		}
+		ip := net.ParseIP(host)
+		if ip != nil && ip.IsLoopback() {
+			return false, "--no-auth is unnecessary when binding to localhost"
+		}
+	}
 	return true, ""
 }
 
@@ -146,6 +159,10 @@ func dispatchSystemCommands(db *sql.DB) bool {
 
 	case "list-blacklist":
 		runListBlacklist(db)
+		return true
+
+	case "list-connections":
+		runListConnections(db)
 		return true
 
 	case "doctor":

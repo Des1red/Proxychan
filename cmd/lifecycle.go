@@ -74,6 +74,13 @@ func runServer(
 	plan *dialer.Plan,
 	authFn func(username, password string) error, db *sql.DB) error {
 	requireAuth := server.RequiresAuth(*listenAddr)
+
+	// Explicit override
+	if *noAuth {
+		requireAuth = false
+		logging.GetLogger().Warn("authentication disabled via --no-auth")
+	}
+
 	srv := server.New(server.Config{
 		ListenAddr:  *listenAddr,
 		Dialer:      plan,

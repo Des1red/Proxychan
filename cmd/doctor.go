@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
+	"time"
 )
 
 func runDoctor(dbPath, logPath string) {
@@ -17,6 +20,9 @@ func runDoctor(dbPath, logPath string) {
 
 	fmt.Println("\nLogs")
 	checkPath(logPath)
+
+	fmt.Println("\nRuntime")
+	checkRuntime()
 }
 
 func checkPath(path string) {
@@ -37,4 +43,35 @@ func checkPath(path string) {
 	}
 	f.Close()
 	fmt.Printf("  Writable        : yes\n")
+}
+
+func checkRuntime() {
+	fmt.Println("\nRuntime")
+
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+	}
+
+	resp, err := client.Get("http://127.0.0.1:6060/connections")
+	if err != nil {
+		fmt.Println("  Admin endpoint  : unreachable")
+		fmt.Printf("  Error           : %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("  Admin endpoint  : error (%s)\n", resp.Status)
+		return
+	}
+
+	var conns []any
+	if err := json.NewDecoder(resp.Body).Decode(&conns); err != nil {
+		fmt.Println("  Admin endpoint  : reachable")
+		fmt.Println("  Response        : invalid JSON")
+		return
+	}
+
+	fmt.Println("  Admin endpoint  : reachable")
+	fmt.Printf("  Active tunnels  : %d\n", len(conns))
 }

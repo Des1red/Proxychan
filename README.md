@@ -2,23 +2,28 @@
 
 - ProxyChan is a lightweight, authenticated SOCKS5 proxy written in Go, designed to act as a controlled egress point for network traffic.
 
-- It can run in:
-
-- direct mode (traditional proxy)
- 
-- Tor mode (proxy → Tor → Internet)
- 
-- chained mode (dynamic SOCKS hop chaining)
- 
-- It supports per-user authentication, LAN / remote usage, and OS-native service installation.
-
 ### Why ProxyChan exists
-
-#### ProxyChan is built around one idea:
+ProxyChan is built around one idea:
 
 - Separate who can connect from where traffic exits.
- 
-#### This lets you:
+
+It is for people who need controlled egress, not anonymity-by-default.
+
+It sits between:
+- raw SOCKS proxies (no control, no safety)
+- full VPNs (heavy, opaque, all-or-nothing)
+
+Typical use cases:
+- exposing a SOCKS proxy safely to a LAN or remote users
+- routing selected traffic through Tor without forcing Tor system-wide
+- giving multiple users controlled outbound access from one machine
+- lab, homelab, and security testing environments
+- situations where VPNs are unnecessary or undesirable
+
+ProxyChan is intentionally boring by design.
+If traffic flows, it’s because a rule allows it.
+
+This lets you:
  
 - centralize outbound traffic
  
@@ -29,8 +34,6 @@
 - use the proxy locally, on a LAN, or remotely
  
 - avoid VPN complexity when SOCKS is enough
- 
-- Think of it as SSH for network egress.
 
 ### Features
 
@@ -47,6 +50,14 @@
 - Safe concurrent handling
 
 - Clean shutdown via signals
+
+- Source IP whitelist (client access control)
+
+- Destination blacklist (egress control)
+
+- Live policy reload (no restart required)
+
+- SQLite-backed state shared between service and CLI
 
 ### System service installation:
 
@@ -130,21 +141,42 @@ proxychan.exe install-service -listen 0.0.0.0:1090 -mode tor
 
 - Lifecycle is managed by the OS (start/stop/restart)
 
-- Authentication model
+## Authentication model
 
-- localhost bind → no auth required
+- Binding to localhost → authentication not required
+- Binding to non-local addresses → authentication enforced automatically
 
-- non-local bind → auth enforced automatically
+#### This prevents accidental open proxies while keeping local usage simple.
 
-- This prevents accidental open proxies.
+## Destination control (egress)
+
+Outbound connections can be blocked by destination:
+
+- IP address
+- CIDR range
+- Exact domain
+- Domain suffix (e.g. .example.com)
+
+#### Rules are applied before dialing out.
+#### If a destination is blocked, no outbound connection is made.
+
+## Access & policy model
+
+- Source whitelist:
+  Controls which client IPs are allowed to connect.
+
+- Destination blacklist:
+  Controls where traffic is allowed to go (IP, CIDR, domain, domain suffix).
+
+#### These policies are enforced server-side and apply to all users equally.
 
 ## Visibility & privacy
 
-### In Tor mode:
+### In Tor mode
 
-- Proxy operator sees who connects, not where they go
-
-- Destinations see Tor exit IPs
+- Proxy operator sees who connects
+- Destinations are reached via Tor
+- Destination metadata is hidden from the operator
 
 ### In direct mode:
 
@@ -153,6 +185,30 @@ proxychan.exe install-service -listen 0.0.0.0:1090 -mode tor
 - Payloads remain encrypted (HTTPS)
 
 #### Choose the mode that fits your threat model.
+
+## Management commands
+
+### User management
+- add-user
+- del-user
+- list-users
+- list-user
+- activate-user / deactivate-user
+- activate-all / deactivate-all
+
+### Source whitelist (client IPs)
+- allow-ip
+- block-ip
+- delete-ip
+- list-whitelist
+- clear-whitelist
+
+### Destination blacklist (egress)
+- block-dest
+- allow-dest
+- delete-dest
+- list-blacklist
+- clear-blacklist
 
 ## What ProxyChan is not
 
@@ -163,6 +219,9 @@ proxychan.exe install-service -listen 0.0.0.0:1090 -mode tor
 - Not a traffic analyzer
 
 - Not a firewall
+
+- Not a policy engine for inbound traffic
+
 
 ### It is a deliberate, minimal egress proxy.
 
@@ -176,7 +235,7 @@ proxychan.exe install-service -listen 0.0.0.0:1090 -mode tor
 
 - Explicit behavior over magic
 
-If something runs, it’s because the OS runs it.
+- Policy is explicit and observable
 
 # License
 

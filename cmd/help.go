@@ -14,7 +14,7 @@ func printHelp() {
 	fmt.Println()
 
 	// ─── Core ────────────────────────────────────────────────
-	fmt.Println("Core:")
+	fmt.Println("[Core]:")
 	clihelp.Print(
 		clihelp.F("--listen", "address", "Listen address for SOCKS5 proxy"),
 		clihelp.F("--mode", "string", "Egress mode (direct | tor)"),
@@ -23,22 +23,26 @@ func printHelp() {
 	)
 	fmt.Println()
 
+	fmt.Println("[Authentication]:")
+	clihelp.Print(clihelp.F("--no-auth", "", "Enforces no authentication policy"))
+	fmt.Println()
+
 	// ─── Tor ─────────────────────────────────────────────────
-	fmt.Println("Tor:")
+	fmt.Println("[Tor]:")
 	clihelp.Print(
 		clihelp.F("--tor-socks", "address", "Tor SOCKS5 address"),
 	)
 	fmt.Println()
 
 	// ─── Chaining ────────────────────────────────────────────
-	fmt.Println("Chaining:")
+	fmt.Println("[Chaining]:")
 	clihelp.Print(
 		clihelp.F("--dynamic-chain", "", "Enable dynamic SOCKS5 hop chaining"),
 		clihelp.F("--chain-config", "path", "YAML chain config (required if enabled)"),
 	)
 	fmt.Println()
 
-	fmt.Println("User management:")
+	fmt.Println("[User management]:")
 	clihelp.Print(
 		clihelp.F("add-user", "", "Initiates user creation"),
 		clihelp.F("del-user", "string", "Deletes existing user"),
@@ -51,7 +55,7 @@ func printHelp() {
 	)
 	fmt.Println()
 
-	fmt.Println("White List management:")
+	fmt.Println("[White List management]:")
 	clihelp.Print(
 		clihelp.F("allow-ip", "string", "Allow IP or CIDR range (e.g. 192.168.1.5 or 192.168.1.0/24)"),
 		clihelp.F("block-ip", "string", "Disable access for an IP or CIDR range (keeps entry)"),
@@ -62,7 +66,7 @@ func printHelp() {
 	)
 
 	fmt.Println()
-	fmt.Println("Destination Blacklist management:")
+	fmt.Println("[Destination Blacklist management]:")
 	clihelp.Print(
 		clihelp.F("block-dest", "string", "Block outbound connections to a destination (IP, CIDR, domain, or .domain)"),
 		clihelp.F("allow-dest", "string", "Re-allow a previously blocked destination (keeps rule)"),
@@ -72,15 +76,19 @@ func printHelp() {
 	)
 
 	fmt.Println()
-	fmt.Println("Doctor:")
-	clihelp.Print(clihelp.F("doctor", "", "Prints Log and DB paths"))
+	fmt.Println("[Status]:")
+	clihelp.Print(
+		clihelp.F("list-connections", "", "Show currently active proxy connections"),
+		clihelp.F("doctor", "", "Prints Log and DB paths"))
 	fmt.Println()
-	fmt.Println("auto-configuration:")
+
+	fmt.Println("[auto-configuration]:")
 	clihelp.Print(
 		clihelp.F("install-service", "", "Install proxychan as a system service"),
 		clihelp.F("remove-service", "", "Remove proxychan system service"),
 	)
 	fmt.Println()
+
 	fmt.Println("Policy Notes:")
 	fmt.Println("  • Whitelist applies to SOURCE IPs (clients)")
 	fmt.Println("  • Blacklist applies to DESTINATIONS (egress)")

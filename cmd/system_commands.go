@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"proxychan/internal/server"
 	"proxychan/internal/system"
 	"strings"
+	"time"
 
 	"golang.org/x/term"
 )
@@ -283,4 +285,47 @@ func runClearBlacklist(db *sql.DB) {
 
 	fmt.Println("DESTINATION BLACKLIST CLEARED")
 	fmt.Println("ALL DESTINATIONS ARE NOW ALLOWED")
+}
+
+type ConnView struct {
+	ID          uint64
+	Username    string
+	SourceIP    string
+	Destination string
+	StartedAt   time.Time
+}
+
+func runListConnections(db *sql.DB) {
+	conns, err := server.ListActiveConnections()
+	if err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+
+	if len(conns) == 0 {
+		fmt.Println("no active connections")
+		return
+	}
+
+	fmt.Printf("%-5s %-10s %-15s %-25s %-20s\n",
+		"ID", "USER", "SOURCE", "DESTINATION", "AGE",
+	)
+
+	now := time.Now()
+	for _, c := range conns {
+		age := now.Sub(c.StartedAt).Truncate(time.Second)
+
+		user := c.Username
+		if user == "" {
+			user = "-"
+		}
+
+		fmt.Printf("%-5d %-10s %-15s %-25s %-20s\n",
+			c.ID,
+			user,
+			c.SourceIP,
+			c.Destination,
+			age,
+		)
+	}
 }
