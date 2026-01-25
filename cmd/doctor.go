@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"proxychan/internal/server"
 	"runtime"
 	"time"
 )
@@ -48,14 +49,12 @@ func checkPath(path string) {
 func checkRuntime() {
 	fmt.Println("\nRuntime")
 
-	client := &http.Client{
-		Timeout: 2 * time.Second,
-	}
+	client := &http.Client{Timeout: 2 * time.Second}
 
-	resp, err := client.Get("http://127.0.0.1:6060/connections")
+	resp, err := client.Get("http://127.0.0.1:6060/connections/by-ip")
 	if err != nil {
 		fmt.Println("  Admin endpoint  : unreachable")
-		fmt.Printf("  Error           : %v\n", err)
+		fmt.Printf("  Error  : %v\n", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -65,13 +64,18 @@ func checkRuntime() {
 		return
 	}
 
-	var conns []any
-	if err := json.NewDecoder(resp.Body).Decode(&conns); err != nil {
+	var groups []server.ConnGroup
+	if err := json.NewDecoder(resp.Body).Decode(&groups); err != nil {
 		fmt.Println("  Admin endpoint  : reachable")
 		fmt.Println("  Response        : invalid JSON")
 		return
 	}
 
+	total := 0
+	for _, g := range groups {
+		total += g.Count
+	}
+
 	fmt.Println("  Admin endpoint  : reachable")
-	fmt.Printf("  Active tunnels  : %d\n", len(conns))
+	fmt.Printf("  Active tunnels  : %d\n", total)
 }
