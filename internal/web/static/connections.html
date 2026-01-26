@@ -1,18 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<link rel="stylesheet" href="/static/connections.css">
 	<title>ProxyChan Connections</title>
-	<style>
-		body { font-family: monospace; padding: 20px; }
-		details { margin-bottom: 12px; }
-		summary { cursor: pointer; font-weight: bold; }
-		.conn { padding-left: 20px; }
-	</style>
 </head>
-<body>
-	<h2>Active Connections</h2>
 
-	<div id="content">Loading…</div>
+<body>
+	<div class="header">
+		<h2>Active Connections</h2>
+		<input
+			id="search"
+			type="text"
+			placeholder="Search IP / user / destination"
+			autocomplete="off"
+		/>
+		<div class="controls">
+			<button id="openAll">Open all</button>
+			<button id="closeAll">Close all</button>
+		
+		</div>
+	</div>
+	<div id="content"></div>
 
 	<script src="/static/connections.js"></script>
 </body>

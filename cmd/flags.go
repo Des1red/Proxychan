@@ -36,6 +36,15 @@ func badFlagUse() (bool, string) {
 		}
 	}
 
+	// tor-socks misuse check
+	if *mode != "tor" {
+		const defaultTor = "127.0.0.1:9050"
+
+		if *torSocksAddr != "" && *torSocksAddr != defaultTor {
+			return false, "--tor-socks can only be used with --mode tor"
+		}
+	}
+
 	// --no-auth is meaningless on localhost
 	if *noAuth {
 		host, _, err := net.SplitHostPort(*listenAddr)

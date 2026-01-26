@@ -1,0 +1,129 @@
+/* Base layout */
+
+body {
+    font-family: monospace;
+    background-color: #0f1115;
+    color: #e6e6e6;
+    padding: 20px;
+    margin: 0;
+}
+
+
+/* Header */
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.header h2 {
+	white-space: nowrap;
+	margin: 0;
+    font-size: 20px;
+    color: #9cdcfe;
+}
+
+.header #search {
+	position: relative;
+	top: 6px;
+	flex: 1;
+	min-width: 200px;
+	padding: 6px 8px;
+	background: #151821;
+	color: #e6e6e6;
+	border: 1px solid #23263a;
+	border-radius: 4px;
+	font-family: monospace;
+}
+
+.header #search::placeholder {
+	color: #777;
+}
+
+
+.controls {
+    display: flex;
+    gap: 6px;
+}
+
+.controls button {
+    background: #1e2230;
+    color: #e6e6e6;
+    border: 1px solid #2f3450;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: monospace;
+}
+
+.controls button:hover {
+    background: #2a2f45;
+}
+
+
+/* Content container */
+
+#content {
+    font-size: 14px;
+}
+
+
+/* Collapsible blocks */
+
+details {
+    background-color: #151821;
+    border: 1px solid #23263a;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+}
+
+
+/* Summary (clickable title) */
+
+summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #c586c0;
+    outline: none;
+}
+
+
+/* Remove default marker spacing quirks */
+
+summary::-webkit-details-marker {
+    display: none;
+}
+
+
+/* Connection entries */
+
+.conn {
+    padding-left: 20px;
+    margin-top: 6px;
+    color: #dcdcdc;
+}
+
+
+/* Optional hover feedback */
+
+details:hover {
+    border-color: #3a3f5c;
+}
+
+#search {
+	width: 100%;
+	margin-bottom: 12px;
+	padding: 6px 8px;
+	background: #151821;
+	color: #e6e6e6;
+	border: 1px solid #23263a;
+	border-radius: 4px;
+	font-family: monospace;
+}
+
+#search::placeholder {
+	color: #777;
+}
