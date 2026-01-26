@@ -1,129 +1,200 @@
-/* Base layout */
+/* =========================
+   Base layout
+   ========================= */
 
 body {
-    font-family: monospace;
-    background-color: #0f1115;
-    color: #e6e6e6;
-    padding: 20px;
-    margin: 0;
+	font-family: monospace;
+	background: radial-gradient(
+		ellipse at top,
+		#121622 0%,
+		#0f1115 60%
+	);
+	color: #e6e6e6;
+	padding: 20px;
+	margin: 0;
+	letter-spacing: 0.2px;
 }
 
 
-/* Header */
+/* =========================
+   Header
+   ========================= */
 
 .header {
 	display: flex;
 	align-items: center;
-	gap: 12px;
-	margin-bottom: 16px;
+	gap: 14px;
+	margin-bottom: 18px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #1f2438;
 }
 
 .header h2 {
 	white-space: nowrap;
 	margin: 0;
-    font-size: 20px;
-    color: #9cdcfe;
+	font-size: 20px;
+	color: #9cdcfe;
+	text-shadow: 0 0 6px rgba(156, 220, 254, 0.15);
 }
+
+
+/* =========================
+   Search
+   ========================= */
 
 .header #search {
 	position: relative;
 	top: 6px;
 	flex: 1;
-	min-width: 200px;
-	padding: 6px 8px;
-	background: #151821;
+	min-width: 220px;
+	padding: 7px 10px;
+	background: linear-gradient(
+		180deg,
+		#171b2a,
+		#141828
+	);
 	color: #e6e6e6;
 	border: 1px solid #23263a;
-	border-radius: 4px;
+	border-radius: 6px;
 	font-family: monospace;
+	box-shadow:
+		inset 0 1px 2px rgba(0, 0, 0, 0.4),
+		0 0 0 transparent;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .header #search::placeholder {
 	color: #777;
 }
 
+.header #search:focus {
+	outline: none;
+	border-color: #3a4a72;
+	box-shadow:
+		inset 0 1px 2px rgba(0, 0, 0, 0.5),
+		0 0 0 1px rgba(58, 74, 114, 0.4);
+}
+
+
+/* =========================
+   Controls
+   ========================= */
 
 .controls {
-    display: flex;
-    gap: 6px;
+	display: flex;
+	gap: 8px;
 }
 
 .controls button {
-    background: #1e2230;
-    color: #e6e6e6;
-    border: 1px solid #2f3450;
-    border-radius: 4px;
-    padding: 6px 10px;
-    cursor: pointer;
-    font-family: monospace;
+	background: linear-gradient(
+		180deg,
+		#1f2436,
+		#1b2030
+	);
+	color: #e6e6e6;
+	border: 1px solid #2f3450;
+	border-radius: 6px;
+	padding: 6px 12px;
+	cursor: pointer;
+	font-family: monospace;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.04),
+		0 2px 4px rgba(0, 0, 0, 0.3);
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease,
+		transform 0.05s ease;
 }
 
 .controls button:hover {
-    background: #2a2f45;
+	background: linear-gradient(
+		180deg,
+		#2a2f45,
+		#232844
+	);
+	border-color: #3a3f5c;
+}
+
+.controls button:active {
+	transform: translateY(1px);
 }
 
 
-/* Content container */
+/* =========================
+   Content container
+   ========================= */
 
 #content {
-    font-size: 14px;
+	font-size: 14px;
 }
 
 
-/* Collapsible blocks */
+/* =========================
+   Connection blocks
+   ========================= */
 
 details {
-    background-color: #151821;
-    border: 1px solid #23263a;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    padding: 8px 12px;
+	background: linear-gradient(
+		180deg,
+		#171b2a,
+		#141828
+	);
+	border: 1px solid #23263a;
+	border-radius: 8px;
+	margin-bottom: 12px;
+	padding: 10px 14px;
+	box-shadow:
+		0 6px 18px rgba(0, 0, 0, 0.25);
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
 }
-
-
-/* Summary (clickable title) */
-
-summary {
-    cursor: pointer;
-    font-weight: bold;
-    color: #c586c0;
-    outline: none;
-}
-
-
-/* Remove default marker spacing quirks */
-
-summary::-webkit-details-marker {
-    display: none;
-}
-
-
-/* Connection entries */
-
-.conn {
-    padding-left: 20px;
-    margin-top: 6px;
-    color: #dcdcdc;
-}
-
-
-/* Optional hover feedback */
 
 details:hover {
-    border-color: #3a3f5c;
+	border-color: #3a3f5c;
+	box-shadow:
+		0 8px 22px rgba(0, 0, 0, 0.35);
 }
 
-#search {
-	width: 100%;
-	margin-bottom: 12px;
-	padding: 6px 8px;
-	background: #151821;
-	color: #e6e6e6;
-	border: 1px solid #23263a;
-	border-radius: 4px;
-	font-family: monospace;
+
+/* =========================
+   Summary
+   ========================= */
+
+summary {
+	cursor: pointer;
+	font-weight: bold;
+	color: #c586c0;
+	outline: none;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
-#search::placeholder {
-	color: #777;
+summary::-webkit-details-marker {
+	display: none;
+}
+
+summary::before {
+	content: "▸";
+	color: #888;
+	transition: transform 0.15s ease;
+}
+
+details[open] summary::before {
+	transform: rotate(90deg);
+	color: #c586c0;
+}
+
+
+/* =========================
+   Connection entries
+   ========================= */
+
+.conn {
+	padding-left: 22px;
+	margin-top: 6px;
+	color: #dcdcdc;
+	font-size: 13px;
+	opacity: 0.95;
 }
