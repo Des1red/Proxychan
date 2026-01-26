@@ -17,7 +17,7 @@ func printHelp() {
 	fmt.Println("[Core]:")
 	clihelp.Print(
 		clihelp.F("--listen", "address", "Listen address for SOCKS5 proxy"),
-		clihelp.F("http-listen", "address", "Listen address for HTTP proxy"),
+		clihelp.F("--http-listen", "address", "Listen address for HTTP proxy"),
 		clihelp.F("--mode", "string", "Egress mode (direct | tor)"),
 		clihelp.F("--connect-timeout", "duration", "Outbound connect timeout"),
 		clihelp.F("--idle-timeout", "duration", "Idle tunnel timeout (0 disables)"),
