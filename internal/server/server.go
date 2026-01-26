@@ -11,6 +11,8 @@ import (
 
 	"proxychan/internal/dialer"
 	"proxychan/internal/logging"
+	"proxychan/internal/models"
+	"proxychan/internal/web"
 
 	"github.com/sirupsen/logrus"
 )
@@ -44,7 +46,7 @@ type Server struct {
 
 	//active connections
 	connMu     sync.RWMutex
-	conns      map[uint64]*ActiveConn
+	conns      map[uint64]*models.ActiveConn
 	nextConnID atomic.Uint64
 }
 
@@ -54,7 +56,7 @@ func New(cfg Config) *Server {
 	}
 	return &Server{
 		cfg:   cfg,
-		conns: make(map[uint64]*ActiveConn),
+		conns: make(map[uint64]*models.ActiveConn),
 	}
 }
 
@@ -138,7 +140,7 @@ func (s *Server) Run(ctx context.Context, db *sql.DB) error {
 		go s.startHTTPProxy(ctx, db)
 	}
 
-	go s.runAdminEndpoint(ctx)
+	go web.RunAdminEndpoint(ctx, s)
 
 	return s.acceptLoop(ctx, ln, db)
 }

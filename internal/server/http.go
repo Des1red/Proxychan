@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/textproto"
+	"proxychan/internal/models"
 	"proxychan/internal/system"
 	"strings"
 	"time"
@@ -161,7 +162,7 @@ func (s *Server) unregisterConn(id uint64) {
 func (s *Server) registerConn(username, srcIP, dst string) uint64 {
 	id := s.nextConnID.Add(1)
 
-	ac := &ActiveConn{
+	ac := &models.ActiveConn{
 		ID:          id,
 		Username:    username,
 		SourceIP:    srcIP,

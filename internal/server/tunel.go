@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net"
+	"proxychan/internal/models"
 	"proxychan/internal/socks5"
 	"sync"
 	"time"
@@ -17,7 +18,7 @@ func (s *Server) handleTunnel(
 ) {
 	id := s.nextConnID.Add(1)
 
-	ac := &ActiveConn{
+	ac := &models.ActiveConn{
 		ID:          id,
 		Username:    username,
 		SourceIP:    srcIP.String(),
