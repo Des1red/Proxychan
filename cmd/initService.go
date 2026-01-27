@@ -32,6 +32,7 @@ func runInstallService() {
 	cfg := systemserviceinstall.InstallConfig{
 		BinaryPath: bin,
 		ListenAddr: *listenAddr,
+		HttpListen: *httpListen,
 		Mode:       *mode,
 		User:       os.Getenv("USER"),
 		NoAuth:     *noAuth,

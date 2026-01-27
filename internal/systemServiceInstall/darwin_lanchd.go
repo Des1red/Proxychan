@@ -38,7 +38,9 @@ func installLaunchd(cfg InstallConfig) error {
 	if cfg.NoAuth {
 		args = append(args, "    <string>--no-auth</string>")
 	}
-
+	if cfg.HttpListen != "" {
+		args = append(args, fmt.Sprintf("    <string>%s</string>", cfg.HttpListen))
+	}
 	content := fmt.Sprintf(
 		launchdPlist,
 		strings.Join(args, "\n"),

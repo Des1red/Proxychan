@@ -8,6 +8,7 @@ import (
 type InstallConfig struct {
 	BinaryPath string
 	ListenAddr string
+	HttpListen string
 	Mode       string
 	NoAuth     bool
 	User       string

@@ -38,7 +38,9 @@ func installSystemd(cfg InstallConfig) error {
 	if cfg.NoAuth {
 		args = append(args, "--no-auth")
 	}
-
+	if cfg.HttpListen != "" {
+		args = append(args, fmt.Sprintf("--http-listen %s", cfg.HttpListen))
+	}
 	execStart := strings.Join(args, " ")
 
 	content := fmt.Sprintf(systemdUnit, execStart)
