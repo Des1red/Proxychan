@@ -53,6 +53,7 @@ func checkRuntime() {
 		return
 	}
 
+	fmt.Println("  Admin path	: localhost:6060")
 	fmt.Println("  Admin endpoint  : reachable")
 	fmt.Printf("  Active tunnels  : %d\n", count)
 }
