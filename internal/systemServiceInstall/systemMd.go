@@ -31,8 +31,8 @@ func installSystemd(cfg InstallConfig) error {
 	// Build ExecStart arguments
 	args := []string{
 		cfg.BinaryPath,
-		"-listen", cfg.ListenAddr,
-		"-mode", cfg.Mode,
+		"--listen", cfg.ListenAddr,
+		"--mode", cfg.Mode,
 	}
 
 	if cfg.NoAuth {

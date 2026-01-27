@@ -26,28 +26,29 @@ func mustInitDB() *sql.DB {
 
 // loadChainIfEnabled loads the chain configuration if dynamic chain is enabled.
 func loadChainIfEnabled() []dialer.ChainHop {
-	if !*dynamicChain {
+	if !cfg.DynamicChain {
 		return nil
 	}
 
-	cfg, err := dialer.LoadChainConfig(*chainConfig)
+	chainCfg, err := dialer.LoadChainConfig(cfg.ChainConfig)
+
 	if err != nil {
 		logging.GetLogger().Fatalf("failed to load chain config: %v", err)
 	}
-	return cfg.Chain
+	return chainCfg.Chain
 }
 
 // buildBaseDialer selects the base dialer based on the mode.
 func buildBaseDialer() dialer.Dialer {
 	var d dialer.Dialer
-	switch *mode {
+	switch cfg.Mode {
 	case "direct":
-		d = dialer.NewDirect(*connectTimeout)
+		d = dialer.NewDirect(cfg.ConnectTimeout)
 	case "tor":
-		service.TorServiceStart(*torSocksAddr)
-		d = socks5.NewTorSOCKS5(*torSocksAddr, *connectTimeout)
+		service.TorServiceStart(cfg.TorSocksAddr)
+		d = socks5.NewTorSOCKS5(cfg.TorSocksAddr, cfg.ConnectTimeout)
 	default:
-		logging.GetLogger().Fatalf("invalid -mode: %q (use direct|tor)", *mode)
+		logging.GetLogger().Fatalf("invalid -mode: %q (use direct|tor)", cfg.Mode)
 	}
 	return d
 }
@@ -73,20 +74,20 @@ func buildPlan(base dialer.Dialer, hops []dialer.ChainHop) *dialer.Plan {
 func runServer(
 	plan *dialer.Plan,
 	authFn func(username, password string) error, db *sql.DB) error {
-	requireAuth := server.RequiresAuth(*listenAddr)
+	requireAuth := server.RequiresAuth(cfg.ListenAddr)
 
 	// Explicit override
-	if *noAuth {
+	if cfg.NoAuth {
 		requireAuth = false
 		logging.GetLogger().Warn("authentication disabled via --no-auth")
 	}
 
 	srv := server.New(server.Config{
-		ListenAddr:     *listenAddr,
-		HTTPListenAddr: *httpListen,
+		ListenAddr:     cfg.ListenAddr,
+		HTTPListenAddr: cfg.HttpListen,
 
 		Dialer:      plan,
-		IdleTimeout: *idleTimeout,
+		IdleTimeout: cfg.IdleTimeout,
 		Logger:      logging.GetLogger(), // Pass logrus logger
 
 		RequireAuth: requireAuth,

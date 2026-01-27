@@ -1,17 +1,17 @@
 package cmd
 
 import (
+	"proxychan/cmd/commands"
 	"proxychan/internal/logging"
 	"proxychan/internal/system"
 )
 
 // Execute runs the main execution flow
 func Execute() {
-	// Setup flags and parse them
-	setupFlagsAndParse()
-
 	// Setup structured logging
 	logging.SetupLogger()
+	// Setup flags and parse them
+	setupFlagsAndParse()
 
 	//Init db
 	db := mustInitDB()
@@ -20,7 +20,7 @@ func Execute() {
 		return system.Authenticate(db, username, password)
 	}
 	// Handle management commands first (like add-user, del-user)
-	if handled := dispatchSystemCommands(db); handled {
+	if handled := commands.DispatchSystemCommands(db, cfg); handled {
 		return
 	}
 
