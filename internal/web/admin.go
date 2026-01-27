@@ -18,10 +18,7 @@ func RunAdminEndpoint(ctx context.Context, p ConnectionProvider) {
 	// static assets
 	mux.Handle(
 		"/static/",
-		http.StripPrefix(
-			"/static/",
-			http.FileServer(http.Dir("internal/web/static")),
-		),
+		http.FileServer(http.FS(staticFS)),
 	)
 
 	mux.HandleFunc("/connections", connectionsHTMLHandler())

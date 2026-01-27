@@ -3,19 +3,34 @@ package commands
 import (
 	"database/sql"
 	"fmt"
-	"os"
+
+	"proxychan/internal/models"
 	"proxychan/internal/system"
 )
 
 func runAllowIP(db *sql.DB, ip string) {
 	if err := system.AllowIP(db, ip); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_ALLOW_FAIL",
+					models.ExitRuntime,
+					fmt.Sprintf("failed to allow IP %q", ip),
+					err,
+				),
+		)
 	}
 
 	if err := system.BumpWhitelistVersion(db); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_VERSION_FAIL",
+					models.ExitRuntime,
+					"failed to bump whitelist version",
+					err,
+				),
+		)
 	}
 
 	fmt.Println("allowed:", ip)
@@ -23,23 +38,72 @@ func runAllowIP(db *sql.DB, ip string) {
 
 func runBlockIP(db *sql.DB, ip string) {
 	if err := system.BlockIP(db, ip); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_BLOCK_FAIL",
+					models.ExitRuntime,
+					fmt.Sprintf("failed to block IP %q", ip),
+					err,
+				),
+		)
 	}
 
 	if err := system.BumpWhitelistVersion(db); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_VERSION_FAIL",
+					models.ExitRuntime,
+					"failed to bump whitelist version",
+					err,
+				),
+		)
 	}
 
 	fmt.Println("blocked:", ip)
 }
 
+func runDeleteIP(db *sql.DB, ip string) {
+	if err := system.DeleteIP(db, ip); err != nil {
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_DELETE_FAIL",
+					models.ExitRuntime,
+					fmt.Sprintf("failed to delete IP %q", ip),
+					err,
+				),
+		)
+	}
+
+	if err := system.BumpWhitelistVersion(db); err != nil {
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_VERSION_FAIL",
+					models.ExitRuntime,
+					"failed to bump whitelist version",
+					err,
+				),
+		)
+	}
+
+	fmt.Println("deleted:", ip)
+}
+
 func runListWhitelist(db *sql.DB) {
 	entries, err := system.ListWhitelist(db)
 	if err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_LIST_FAIL",
+					models.ExitRuntime,
+					"failed to list source whitelist",
+					err,
+				),
+		)
 	}
 
 	if len(entries) == 0 {
@@ -58,25 +122,18 @@ func runListWhitelist(db *sql.DB) {
 	}
 }
 
-func runDeleteIP(db *sql.DB, ip string) {
-	if err := system.DeleteIP(db, ip); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
-	}
-
-	if err := system.BumpWhitelistVersion(db); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("deleted:", ip)
-}
-
 func runWhitelistStatus(db *sql.DB) {
 	s, err := system.GetWhitelistStatus(db)
 	if err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_STATUS_FAIL",
+					models.ExitRuntime,
+					"failed to read whitelist status",
+					err,
+				),
+		)
 	}
 
 	fmt.Printf(
@@ -90,13 +147,27 @@ func runWhitelistStatus(db *sql.DB) {
 
 func runClearWhitelist(db *sql.DB) {
 	if err := system.ClearWhitelist(db); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_CLEAR_FAIL",
+					models.ExitRuntime,
+					"failed to clear whitelist",
+					err,
+				),
+		)
 	}
 
 	if err := system.BumpWhitelistVersion(db); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"WHITELIST_VERSION_FAIL",
+					models.ExitRuntime,
+					"failed to bump whitelist version",
+					err,
+				),
+		)
 	}
 
 	fmt.Println("WHITELIST CLEARED")

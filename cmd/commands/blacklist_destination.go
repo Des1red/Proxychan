@@ -4,14 +4,20 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"proxychan/internal/models"
 	"proxychan/internal/system"
 )
 
 // block-destination
 func runBlockDestination(db *sql.DB, target string) {
 	if err := system.DenyDestination(db, target); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to block destination %q: %v\n", target, err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap("DEST_BLOCK_FAIL", models.ExitRuntime,
+					fmt.Sprintf("failed to block destination %q", target),
+					err).
+				WithHint("check destination format (IP, CIDR, domain, or .domain)"),
+		)
 	}
 	fmt.Printf("destination blocked: %s\n", target)
 }
@@ -19,8 +25,15 @@ func runBlockDestination(db *sql.DB, target string) {
 // allow-destination
 func runAllowDestination(db *sql.DB, target string) {
 	if err := system.AllowDestination(db, target); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to allow destination %q: %v\n", target, err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"DEST_ALLOW_FAIL",
+					models.ExitRuntime,
+					fmt.Sprintf("failed to allow destination %q", target),
+					err,
+				),
+		)
 	}
 	fmt.Printf("destination allowed: %s\n", target)
 }
@@ -38,8 +51,15 @@ func runDeleteDestination(db *sql.DB, target string) {
 func runListBlacklist(db *sql.DB) {
 	rules, err := system.ListDenylist(db)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to list blacklist: %v\n", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"DEST_LIST_FAIL",
+					models.ExitRuntime,
+					"failed to list destination blacklist",
+					err,
+				),
+		)
 	}
 
 	if len(rules) == 0 {
@@ -60,13 +80,27 @@ func runListBlacklist(db *sql.DB) {
 
 func runClearBlacklist(db *sql.DB) {
 	if err := system.ClearDenylist(db); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"DEST_CLEAR_FAIL",
+					models.ExitRuntime,
+					"failed to clear destination blacklist",
+					err,
+				),
+		)
 	}
 
 	if err := system.BumpDenylistVersion(db); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"DEST_VERSION_FAIL",
+					models.ExitRuntime,
+					"failed to bump destination blacklist version",
+					err,
+				),
+		)
 	}
 
 	fmt.Println("DESTINATION BLACKLIST CLEARED")

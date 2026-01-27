@@ -3,8 +3,6 @@ package web
 import (
 	"encoding/json"
 	"net/http"
-	"os"
-	"path/filepath"
 )
 
 func connectionsHTMLHandler() http.HandlerFunc {
@@ -16,9 +14,8 @@ func connectionsHTMLHandler() http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-		html, err := os.ReadFile(
-			filepath.Join("internal", "web", "static", "connections.html"),
-		)
+		html, err := staticFS.ReadFile("static/connections.html")
+
 		if err != nil {
 			http.Error(w, "failed to load html", http.StatusInternalServerError)
 			return

@@ -11,13 +11,27 @@ import (
 func currentBinaryPath() string {
 	p, err := os.Executable()
 	if err != nil {
-		fmt.Println("failed to determine binary path:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"BIN_PATH_FAIL",
+					models.ExitIO,
+					"failed to determine binary path",
+					err,
+				),
+		)
 	}
 	p, err = filepath.EvalSymlinks(p)
 	if err != nil {
-		fmt.Println("failed to resolve binary path:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"BIN_PATH_RESOLVE_FAIL",
+					models.ExitIO,
+					"failed to resolve binary path",
+					err,
+				),
+		)
 	}
 	return p
 }
@@ -25,8 +39,15 @@ func currentBinaryPath() string {
 func runInstallService(cfg models.FlagConfig) {
 	// Check if the user is running as root
 	if os.Geteuid() != 0 {
-		fmt.Println("Error: Installing the service requires root privileges. Please run with sudo.")
-		os.Exit(1)
+		fatal(
+			models.
+				NewCLIError(
+					"SERVICE_NEEDS_ROOT",
+					models.ExitUsage,
+					"installing the service requires root privileges",
+				).
+				WithHint("run the command with sudo"),
+		)
 	}
 	bin := currentBinaryPath()
 
@@ -40,8 +61,15 @@ func runInstallService(cfg models.FlagConfig) {
 	}
 
 	if err := systemserviceinstall.Install(installCfg); err != nil {
-		fmt.Println("service installation failed:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"SERVICE_INSTALL_FAIL",
+					models.ExitExternal,
+					"service installation failed",
+					err,
+				),
+		)
 	}
 
 	fmt.Println("service installed successfully")
@@ -49,8 +77,15 @@ func runInstallService(cfg models.FlagConfig) {
 
 func runRemoveService() {
 	if err := systemserviceinstall.Remove(); err != nil {
-		fmt.Println("service removal failed:", err)
-		os.Exit(1)
+		fatal(
+			models.
+				Wrap(
+					"SERVICE_REMOVE_FAIL",
+					models.ExitExternal,
+					"service removal failed",
+					err,
+				),
+		)
 	}
 	fmt.Println("service removed successfully")
 }
