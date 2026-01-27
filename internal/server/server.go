@@ -140,7 +140,7 @@ func (s *Server) Run(ctx context.Context, db *sql.DB) error {
 		go s.startHTTPProxy(ctx, db)
 	}
 
-	go web.RunAdminEndpoint(ctx, s)
+	go web.RunAdminEndpoint(ctx, s, db)
 
 	return s.acceptLoop(ctx, ln, db)
 }

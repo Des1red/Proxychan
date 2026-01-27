@@ -127,6 +127,10 @@ func DispatchSystemCommands(db *sql.DB, cfg models.FlagConfig) bool {
 		runListConnections(db)
 		return true
 
+	case "set-admin-pwd":
+		runSetAdminPassword(db)
+		return true
+
 	case "doctor":
 		dbPath, _ := system.DBPath()
 		logDir, _ := logging.LogDir()

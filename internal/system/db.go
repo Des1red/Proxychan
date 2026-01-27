@@ -102,6 +102,12 @@ func initSchema(db *sql.DB) error {
 	
 	INSERT OR IGNORE INTO denylist_meta (id, version)
 	VALUES (1, 1);
+
+	CREATE TABLE IF NOT EXISTS admin_auth (
+	    id INTEGER PRIMARY KEY CHECK (id = 1),
+	    password_hash TEXT NOT NULL,
+	    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
 	`
 
 	_, err := db.Exec(schema)

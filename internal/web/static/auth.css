@@ -1,0 +1,169 @@
+/* =========================
+   Base layout
+   ========================= */
+
+body {
+	font-family: monospace;
+	background: radial-gradient(
+		ellipse at top,
+		#121622 0%,
+		#0f1115 60%
+	);
+	color: #e6e6e6;
+	margin: 0;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	letter-spacing: 0.2px;
+}
+
+body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(
+			600px 300px at 20% -10%,
+			rgba(156, 220, 254, 0.06),
+			transparent 70%
+		),
+		radial-gradient(
+			500px 300px at 80% 0%,
+			rgba(197, 134, 192, 0.05),
+			transparent 70%
+		);
+}
+
+
+/* =========================
+   Login container
+   ========================= */
+
+.login-box {
+	background: linear-gradient(
+		180deg,
+		#171b2a,
+		#141828
+	);
+	border: 1px solid #23263a;
+	border-radius: 10px;
+	padding: 26px 28px 30px;
+	width: 320px;
+	box-shadow:
+		0 10px 28px rgba(0, 0, 0, 0.45),
+		0 0 22px rgba(58, 63, 92, 0.35);
+	position: relative;
+}
+
+.login-box::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 10px;
+	pointer-events: none;
+	box-shadow: 0 0 0 transparent;
+}
+
+
+/* =========================
+   Title
+   ========================= */
+
+.login-box h2 {
+	margin: 0 0 18px;
+	font-size: 20px;
+	color: #9cdcfe;
+	text-align: center;
+	text-shadow: 0 0 6px rgba(156, 220, 254, 0.2);
+}
+
+
+/* =========================
+   Form
+   ========================= */
+
+.login-box form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.login-box input[type="password"] {
+	padding: 9px 10px;
+	background: linear-gradient(
+		180deg,
+		#171b2a,
+		#141828
+	);
+	color: #e6e6e6;
+	border: 1px solid #23263a;
+	border-radius: 6px;
+	font-family: monospace;
+	box-shadow:
+		inset 0 1px 2px rgba(0, 0, 0, 0.45);
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.login-box input::placeholder {
+	color: #777;
+}
+
+.login-box input:focus {
+	outline: none;
+	border-color: #3a4a72;
+	box-shadow:
+		inset 0 1px 2px rgba(0, 0, 0, 0.5),
+		0 0 0 1px rgba(58, 74, 114, 0.45),
+		0 0 14px rgba(58, 74, 114, 0.35);
+}
+
+
+/* =========================
+   Button
+   ========================= */
+
+.login-box button {
+	margin-top: 4px;
+	background: linear-gradient(
+		180deg,
+		#1f2436,
+		#1b2030
+	);
+	color: #e6e6e6;
+	border: 1px solid #2f3450;
+	border-radius: 6px;
+	padding: 8px 14px;
+	cursor: pointer;
+	font-family: monospace;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.04),
+		0 4px 10px rgba(0, 0, 0, 0.35);
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease,
+		transform 0.05s ease,
+		box-shadow 0.15s ease;
+}
+
+.login-box button:hover {
+	background: linear-gradient(
+		180deg,
+		#2a2f45,
+		#232844
+	);
+	border-color: #3a3f5c;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.05),
+		0 6px 14px rgba(0, 0, 0, 0.45),
+		0 0 14px rgba(58, 63, 92, 0.4);
+}
+
+.login-box button:active {
+	transform: translateY(1px);
+	box-shadow:
+		inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}

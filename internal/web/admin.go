@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"proxychan/internal/models"
 )
@@ -12,21 +13,21 @@ type ConnectionProvider interface {
 	Warnf(format string, args ...any)
 }
 
-func RunAdminEndpoint(ctx context.Context, p ConnectionProvider) {
-	mux := http.NewServeMux()
+func RunAdminEndpoint(ctx context.Context, p ConnectionProvider, db *sql.DB) {
+	app := http.NewServeMux()
 
-	// static assets
-	mux.Handle(
-		"/static/",
-		http.FileServer(http.FS(staticFS)),
-	)
+	app.Handle("/static/", http.FileServer(http.FS(staticFS)))
+	app.HandleFunc("/login", adminLoginPage())
+	app.HandleFunc("/login/submit", adminLoginHandler(db))
+	app.HandleFunc("/connections", connectionsHTMLHandler())
+	app.HandleFunc("/connections/by-ip", connectionsJSONHandler(p))
+	app.HandleFunc("/logout", adminLogoutHandler())
 
-	mux.HandleFunc("/connections", connectionsHTMLHandler())
-	mux.HandleFunc("/connections/by-ip", connectionsJSONHandler(p))
+	handler := adminGate(db, app)
 
 	srv := &http.Server{
 		Addr:    "127.0.0.1:6060",
-		Handler: mux,
+		Handler: handler,
 	}
 
 	go func() {

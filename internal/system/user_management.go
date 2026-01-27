@@ -91,7 +91,7 @@ func AddUser(db *sql.DB, username, password string) error {
 		return err
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := hashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func AddUser(db *sql.DB, username, password string) error {
 	res, err := tx.Exec(
 		`INSERT INTO users (username, password_hash) VALUES (?, ?)`,
 		username,
-		string(hash),
+		hash,
 	)
 	if err != nil {
 		return err

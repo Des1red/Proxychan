@@ -3,11 +3,12 @@ package cmd
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"os"
 	"os/signal"
+	"proxychan/cmd/commands"
 	"proxychan/internal/dialer"
 	"proxychan/internal/logging"
+	"proxychan/internal/models"
 	"proxychan/internal/server"
 	"proxychan/internal/service"
 	"proxychan/internal/socks5"
@@ -18,8 +19,14 @@ import (
 func mustInitDB() *sql.DB {
 	db, err := system.InitDB()
 	if err != nil {
-		fmt.Println("db error:", err)
-		os.Exit(1)
+		commands.Fatal(
+			models.Wrap(
+				"DB_INIT_FAIL",
+				models.ExitIO,
+				"failed to initialize database",
+				err,
+			),
+		)
 	}
 	return db
 }

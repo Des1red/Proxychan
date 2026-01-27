@@ -93,6 +93,16 @@ func printHelp() {
 	)
 	fmt.Println()
 
+	fmt.Println("Admin Authentication:")
+	clihelp.Print(
+		clihelp.F(
+			"set-admin-pwd",
+			"",
+			"Set or rotate the administrator password for the web interface",
+		),
+	)
+	fmt.Println()
+
 	fmt.Println("Policy Notes:")
 	fmt.Println("  • Whitelist applies to SOURCE IPs (clients)")
 	fmt.Println("  • Blacklist applies to DESTINATIONS (egress)")
