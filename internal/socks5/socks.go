@@ -109,10 +109,6 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 		logging.GetLogger().Errorf("Failed to read SOCKS methods: %v", err)
 		return "", err
 	}
-	logging.GetLogger().Warnf(
-		"SOCKS5 offered methods: %v",
-		methods,
-	)
 
 	// RFC 1928 §3: Server selects authentication method
 	method, err := negotiateMethod(opt.RequireAuth, methods)

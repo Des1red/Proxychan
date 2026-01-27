@@ -52,6 +52,11 @@ func adminGate(db *sql.DB, app http.Handler) http.Handler {
 			app.ServeHTTP(w, r)
 			return
 		}
+		sec, err := system.InternalAdminSecret()
+		if err == nil && r.Header.Get("X-ProxyChan-Internal") == sec {
+			app.ServeHTTP(w, r)
+			return
+		}
 
 		ok, err := system.AdminPasswordConfigured(db)
 		if err != nil {
@@ -72,11 +77,12 @@ func adminGate(db *sql.DB, app http.Handler) http.Handler {
 			return
 		}
 
-		if !isAdminAuthenticated(r) {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+		// browser auth path
+		if isAdminAuthenticated(r) {
+			app.ServeHTTP(w, r)
 			return
 		}
 
-		app.ServeHTTP(w, r)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 	})
 }

@@ -17,6 +17,7 @@ import (
 )
 
 func (s *Server) handleHTTPConn(ctx context.Context, client net.Conn, db *sql.DB) {
+
 	defer client.Close()
 
 	br := bufio.NewReader(client)
@@ -107,8 +108,12 @@ func (s *Server) httpAuthFromHeaders(hdr textproto.MIMEHeader, conn net.Conn, db
 	}
 
 	if err := s.cfg.AuthFunc(u, p); err != nil {
-		writeHTTPError(conn, 407, "Proxy Authentication Required")
-		_, _ = conn.Write([]byte("Proxy-Authenticate: Basic realm=\"ProxyChan\"\r\n\r\n"))
+		_, _ = fmt.Fprintf(
+			conn,
+			"HTTP/1.1 407 Proxy Authentication Required\r\n"+
+				"Proxy-Authenticate: Basic realm=\"ProxyChan\"\r\n"+
+				"Content-Length: 0\r\n\r\n",
+		)
 		return "", errors.New("bad proxy auth")
 	}
 

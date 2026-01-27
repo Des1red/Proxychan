@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"proxychan/internal/models"
+	"proxychan/internal/system"
 	"sort"
 	"time"
 )
@@ -73,7 +74,19 @@ func (s *Server) GroupConnectionsByIP(
 func ListActiveConnectionsByIP() ([]models.ConnGroup, error) {
 	client := &http.Client{Timeout: 3 * time.Second}
 
-	resp, err := client.Get("http://127.0.0.1:6060/connections/by-ip")
+	req, _ := http.NewRequest(
+		"GET",
+		"http://127.0.0.1:6060/connections/by-ip",
+		nil,
+	)
+	sec, err := system.InternalAdminSecret()
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-ProxyChan-Internal", sec)
+
+	resp, err := client.Do(req)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to proxy admin endpoint: %w", err)
 	}

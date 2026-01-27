@@ -44,7 +44,6 @@ func checkPath(path string) {
 }
 
 func checkRuntime() {
-	fmt.Println("\nRuntime")
 
 	count, err := server.GetActiveConnectionCount()
 	if err != nil {

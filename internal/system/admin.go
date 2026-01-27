@@ -1,8 +1,13 @@
 package system
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
+	"os"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -102,4 +107,54 @@ func VerifyAdminCredentials(db *sql.DB, password string) error {
 		return errors.New("invalid admin credentials")
 	}
 	return nil
+}
+
+var (
+	internalSecretOnce sync.Once
+	internalSecret     string
+	internalSecretErr  error
+)
+
+func InternalAdminSecret() (string, error) {
+	internalSecretOnce.Do(func() {
+		internalSecret, internalSecretErr = loadOrCreateSecret("/var/lib/proxychan/admin_internal.secret")
+	})
+	return internalSecret, internalSecretErr
+}
+
+func loadOrCreateSecret(path string) (string, error) {
+	// Try read first
+	if b, err := os.ReadFile(path); err == nil {
+		s := strings.TrimSpace(string(b))
+		if s == "" {
+			return "", errors.New("internal admin secret file is empty")
+		}
+		return s, nil
+	}
+
+	// Create new (root-only)
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	s := hex.EncodeToString(b) + "\n"
+
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		// If it already exists (race), read it
+		if b2, err2 := os.ReadFile(path); err2 == nil {
+			ss := strings.TrimSpace(string(b2))
+			if ss == "" {
+				return "", errors.New("internal admin secret file is empty")
+			}
+			return ss, nil
+		}
+		return "", err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(s); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(s), nil
 }
