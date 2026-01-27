@@ -1,13 +1,9 @@
 package service
 
 import (
-	"bufio"
-	"fmt"
 	"net"
-	"os"
 	"proxychan/internal/logging"
 	"proxychan/internal/models"
-	"strings"
 	"time"
 )
 
@@ -27,13 +23,6 @@ func TorServiceStart(torSocksAddr string) {
 		logging.GetLogger().Info("Tor SOCKS is already reachable.")
 		return
 	}
-
-	fmt.Println("Tor SOCKS is not reachable.")
-	fmt.Print("Start Tor service now? [y/N]: ")
-
-	reader := bufio.NewReader(os.Stdin)
-	ans, _ := reader.ReadString('\n')
-	ans = strings.TrimSpace(strings.ToLower(ans))
 
 	if err := ctrl.StartTor(); err != nil {
 		logging.GetLogger().Fatalf("Failed to start Tor: %v", err)

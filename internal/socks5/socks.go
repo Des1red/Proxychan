@@ -49,6 +49,41 @@ const (
 	atypIPv6   = 0x04
 )
 
+// negotiateMethod selects the SOCKS5 auth method based on policy and client offer.
+// RFC 1928 §3
+func negotiateMethod(requireAuth bool, methods []byte) (byte, error) {
+	hasNoAuth := false
+	hasUserPass := false
+
+	for _, m := range methods {
+		switch m {
+		case methodNoAuth:
+			hasNoAuth = true
+		case methodUserPass:
+			hasUserPass = true
+		}
+	}
+
+	switch {
+	// RFC 1928 §3: If authentication is required, USER/PASS must be selected
+	case requireAuth:
+		if hasUserPass {
+			return methodUserPass, nil
+		}
+		return methodNoAccept, ErrNoAcceptableMethod
+
+	// RFC 1928 §3: Server selects one acceptable method, or NO ACCEPTABLE METHODS
+	default:
+		if hasNoAuth {
+			return methodNoAuth, nil
+		}
+		if hasUserPass {
+			return methodUserPass, nil
+		}
+		return methodNoAccept, ErrNoAcceptableMethod
+	}
+}
+
 // HandleHandshake negotiates SOCKS5 auth.
 func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 	var hdr [2]byte
@@ -56,7 +91,8 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 		logging.GetLogger().Errorf("Failed to read handshake header: %v", err)
 		return "", err
 	}
-	// VER must be 5
+
+	// RFC 1928 §3: VER must be 0x05
 	if hdr[0] != socksVersion5 {
 		logging.GetLogger().Warnf("Unsupported SOCKS version: %d", hdr[0])
 		return "", ErrUnsupportedVersion
@@ -65,7 +101,6 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 	nMethods := int(hdr[1])
 	if nMethods <= 0 {
 		_, _ = rw.Write([]byte{socksVersion5, methodNoAccept})
-		logging.GetLogger().Warn("No acceptable methods in handshake")
 		return "", ErrNoAcceptableMethod
 	}
 
@@ -74,71 +109,48 @@ func HandleHandshake(rw io.ReadWriter, opt HandshakeOptions) (string, error) {
 		logging.GetLogger().Errorf("Failed to read SOCKS methods: %v", err)
 		return "", err
 	}
+	logging.GetLogger().Warnf(
+		"SOCKS5 offered methods: %v",
+		methods,
+	)
 
-	hasNoAuth := false
-	hasUserPass := false
-	for _, m := range methods {
-		if m == methodNoAuth {
-			hasNoAuth = true
-		}
-		if m == methodUserPass {
-			hasUserPass = true
-		}
-	}
-
-	if !opt.RequireAuth {
-		if hasNoAuth {
-			_, _ = rw.Write([]byte{socksVersion5, methodNoAuth})
-			return "", nil
-		}
-
-		if hasUserPass {
-			// accept USER/PASS but DO NOT validate
-			if _, err := rw.Write([]byte{socksVersion5, methodUserPass}); err != nil {
-				return "", err
-			}
-
-			// consume credentials but ignore them
-			_, _, err := readUserPassAuth(rw)
-			if err != nil {
-				writeUserPassStatus(rw, authStatusFailure)
-				return "", err
-			}
-
-			writeUserPassStatus(rw, authStatusSuccess)
-			return "", nil
-		}
-
+	// RFC 1928 §3: Server selects authentication method
+	method, err := negotiateMethod(opt.RequireAuth, methods)
+	if err != nil {
 		_, _ = rw.Write([]byte{socksVersion5, methodNoAccept})
-		return "", ErrNoAcceptableMethod
+		return "", err
 	}
-	// ───────────── AUTH REQUIRED ─────────────
-	if opt.RequireAuth {
-		if !hasUserPass {
-			rw.Write([]byte{0x05, methodNoAccept})
-			return "", ErrNoAcceptableMethod
-		}
 
-		if _, err := rw.Write([]byte{0x05, methodUserPass}); err != nil {
-			return "", err
-		}
+	if _, err := rw.Write([]byte{socksVersion5, method}); err != nil {
+		return "", err
+	}
 
+	// RFC 1929: Username/Password Authentication
+	switch method {
+	case methodUserPass:
 		u, p, err := readUserPassAuth(rw)
 		if err != nil {
 			writeUserPassStatus(rw, authStatusFailure)
 			return "", err
 		}
 
-		if err := opt.AuthFunc(u, p); err != nil {
-			writeUserPassStatus(rw, authStatusFailure)
-			return "", ErrAuthFailed
+		// RFC 1929 §2: Server validates credentials
+		if opt.RequireAuth {
+			if err := opt.AuthFunc(u, p); err != nil {
+				writeUserPassStatus(rw, authStatusFailure)
+				return "", ErrAuthFailed
+			}
 		}
 
 		writeUserPassStatus(rw, authStatusSuccess)
 		return u, nil
+
+	// RFC 1928 §3: NO AUTHENTICATION REQUIRED
+	case methodNoAuth:
+		return "", nil
 	}
 
-	rw.Write([]byte{0x05, methodNoAccept})
+	// Defensive: should never reach here
 	return "", ErrNoAcceptableMethod
 }
 
