@@ -24,26 +24,28 @@ const launchdPlist = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `
 
-func installLaunchd(cfg InstallConfig) error {
+func installLaunchd(binary string, args []string) error {
 	const plistPath = "/Library/LaunchDaemons/com.proxychan.proxy.plist"
 
-	args := []string{
-		fmt.Sprintf("    <string>%s</string>", cfg.BinaryPath),
-		"    <string>-listen</string>",
-		fmt.Sprintf("    <string>%s</string>", cfg.ListenAddr),
-		"    <string>-mode</string>",
-		fmt.Sprintf("    <string>%s</string>", cfg.Mode),
+	var plistArgs []string
+
+	// Binary first
+	plistArgs = append(
+		plistArgs,
+		fmt.Sprintf("    <string>%s</string>", binary),
+	)
+
+	// Each arg is its own <string>
+	for _, arg := range args {
+		plistArgs = append(
+			plistArgs,
+			fmt.Sprintf("    <string>%s</string>", arg),
+		)
 	}
 
-	if cfg.NoAuth {
-		args = append(args, "    <string>--no-auth</string>")
-	}
-	if cfg.HttpListen != "" {
-		args = append(args, fmt.Sprintf("    <string>%s</string>", cfg.HttpListen))
-	}
 	content := fmt.Sprintf(
 		launchdPlist,
-		strings.Join(args, "\n"),
+		strings.Join(plistArgs, "\n"),
 	)
 
 	if err := os.WriteFile(plistPath, []byte(content), 0644); err != nil {

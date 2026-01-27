@@ -49,18 +49,25 @@ func runInstallService(cfg models.FlagConfig) {
 				WithHint("run the command with sudo"),
 		)
 	}
+
 	bin := currentBinaryPath()
 
-	installCfg := systemserviceinstall.InstallConfig{
-		BinaryPath: bin,
-		ListenAddr: cfg.ListenAddr,
-		HttpListen: cfg.HttpListen,
-		Mode:       cfg.Mode,
-		User:       os.Getenv("USER"),
-		NoAuth:     cfg.NoAuth,
+	// Serialize flags → CLI args
+	args, err := cfg.ToArgs()
+	if err != nil {
+		fatal(
+			models.
+				Wrap(
+					"SERVICE_FLAG_SERIALIZE_FAIL",
+					models.ExitConfig,
+					"failed to serialize service flags",
+					err,
+				),
+		)
 	}
 
-	if err := systemserviceinstall.Install(installCfg); err != nil {
+	// Install service using binary + args
+	if err := systemserviceinstall.Install(bin, args); err != nil {
 		fatal(
 			models.
 				Wrap(

@@ -5,23 +5,14 @@ import (
 	"runtime"
 )
 
-type InstallConfig struct {
-	BinaryPath string
-	ListenAddr string
-	HttpListen string
-	Mode       string
-	NoAuth     bool
-	User       string
-}
-
-func Install(cfg InstallConfig) error {
+func Install(binary string, args []string) error {
 	switch runtime.GOOS {
 	case "linux":
-		return installSystemd(cfg)
+		return installSystemd(binary, args)
 	case "darwin":
-		return installLaunchd(cfg)
+		return installLaunchd(binary, args)
 	case "windows":
-		return installWindowsService(cfg)
+		return installWindowsService(binary, args)
 	default:
 		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}

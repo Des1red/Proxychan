@@ -6,14 +6,13 @@ import (
 	"strings"
 )
 
-func installWindowsService(cfg InstallConfig) error {
+func installWindowsService(binary string, args []string) error {
 	const serviceName = "ProxyChan"
 
-	args := strings.Join([]string{
-		cfg.BinaryPath,
-		"-listen", cfg.ListenAddr,
-		"-mode", cfg.Mode,
-	}, " ")
+	fullCmd := strings.Join(
+		append([]string{binary}, args...),
+		" ",
+	)
 
 	// Best-effort stop + delete (idempotent)
 	_ = exec.Command("sc.exe", "stop", serviceName).Run()
@@ -22,7 +21,7 @@ func installWindowsService(cfg InstallConfig) error {
 	createCmd := exec.Command(
 		"sc.exe",
 		"create", serviceName,
-		"binPath=", args,
+		"binPath=", fullCmd,
 		"start=", "auto",
 	)
 

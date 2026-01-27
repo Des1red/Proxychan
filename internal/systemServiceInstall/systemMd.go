@@ -25,23 +25,13 @@ TimeoutStopSec=10
 WantedBy=multi-user.target
 `
 
-func installSystemd(cfg InstallConfig) error {
+func installSystemd(binary string, args []string) error {
 	unitPath := "/etc/systemd/system/proxychan.service"
 
-	// Build ExecStart arguments
-	args := []string{
-		cfg.BinaryPath,
-		"--listen", cfg.ListenAddr,
-		"--mode", cfg.Mode,
-	}
-
-	if cfg.NoAuth {
-		args = append(args, "--no-auth")
-	}
-	if cfg.HttpListen != "" {
-		args = append(args, fmt.Sprintf("--http-listen %s", cfg.HttpListen))
-	}
-	execStart := strings.Join(args, " ")
+	execStart := strings.Join(
+		append([]string{binary}, args...),
+		" ",
+	)
 
 	content := fmt.Sprintf(systemdUnit, execStart)
 
