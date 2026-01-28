@@ -81,7 +81,7 @@ func buildPlan(base dialer.Dialer, hops []dialer.ChainHop) *dialer.Plan {
 func runServer(
 	plan *dialer.Plan,
 	authFn func(username, password string) error, db *sql.DB) error {
-	requireAuth := server.RequiresAuth(cfg.ListenAddr)
+	requireAuth := true
 
 	// Explicit override
 	if cfg.NoAuth {

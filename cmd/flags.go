@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"proxychan/cmd/commands"
 	"proxychan/internal/dialer"
@@ -101,17 +100,6 @@ func badFlagUse(cfg models.FlagConfig) (bool, string) {
 		}
 	}
 
-	// --no-auth is meaningless on localhost
-	if cfg.NoAuth {
-		host, _, err := net.SplitHostPort(cfg.ListenAddr)
-		if err != nil {
-			return false, "invalid listen address"
-		}
-		ip := net.ParseIP(host)
-		if ip != nil && ip.IsLoopback() {
-			return false, "--no-auth is unnecessary when binding to localhost"
-		}
-	}
 	return true, ""
 }
 

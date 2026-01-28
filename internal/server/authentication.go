@@ -49,20 +49,6 @@ func (s *Server) authenticate(client net.Conn, db *sql.DB) (string, error) {
 	return username, nil
 }
 
-func RequiresAuth(listenAddr string) bool {
-	host, _, err := net.SplitHostPort(listenAddr)
-	if err != nil {
-		return true // fail closed
-	}
-
-	ip := net.ParseIP(host)
-	if ip == nil {
-		return true
-	}
-
-	return !ip.IsLoopback()
-}
-
 func (s *Server) readAndAuthorizeRequest(
 	client net.Conn,
 	username string,
