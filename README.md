@@ -41,7 +41,7 @@ This lets you:
 
 - Username/password authentication
 
-- Automatic auth enforcement when not bound to localhost
+- Automatic auth enforcement
 
 - Direct or Tor-based egress
 
