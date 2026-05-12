@@ -81,12 +81,15 @@ func buildPlan(base dialer.Dialer, hops []dialer.ChainHop) *dialer.Plan {
 func runServer(
 	plan *dialer.Plan,
 	authFn func(username, password string) error, db *sql.DB) error {
-	requireAuth := true
+	requireAuth := server.ShouldRequireAuth(cfg)
 
-	// Explicit override
-	if cfg.NoAuth {
-		requireAuth = false
+	switch {
+	case cfg.NoAuth:
 		logging.GetLogger().Warn("authentication disabled via --no-auth")
+	case !requireAuth:
+		logging.GetLogger().Info("authentication disabled for loopback-only listeners")
+	default:
+		logging.GetLogger().Info("authentication required")
 	}
 
 	srv := server.New(server.Config{

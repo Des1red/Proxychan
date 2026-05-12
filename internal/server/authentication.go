@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"net"
+	"proxychan/internal/models"
 	"proxychan/internal/socks5"
 	"proxychan/internal/system"
 	"time"
@@ -85,4 +86,38 @@ func (s *Server) readAndAuthorizeRequest(
 	}
 
 	return &req, nil
+}
+
+func ShouldRequireAuth(cfg models.FlagConfig) bool {
+	if cfg.NoAuth {
+		return false
+	}
+
+	if !isLoopbackListenAddr(cfg.ListenAddr) {
+		return true
+	}
+
+	if cfg.HttpListen != "" && !isLoopbackListenAddr(cfg.HttpListen) {
+		return true
+	}
+
+	return false
+}
+
+func isLoopbackListenAddr(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+
+	if host == "localhost" {
+		return true
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+
+	return ip.IsLoopback()
 }
