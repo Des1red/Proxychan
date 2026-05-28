@@ -239,4 +239,4 @@ Outbound connections can be blocked by destination:
 
 # License
 
- MIT
+GNU
